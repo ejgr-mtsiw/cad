@@ -29,3 +29,21 @@ processo 4: enviado 15
 processo 0: recebido 15
 Total: 15
 ```
+
+## mpi-repvb
+This program shares an array between all the processes in the pool
+ 
+Process #0 creates an array with the length indicated by the user in the command line.
+In each iteration of the algorithm all the processes with rank k < 2^i send the array to the process 2^i + k.
+
+Ex: `mpirun -np 8 repvb.out 15`
+```c
+processo 7: v[4] = 0, 1, ..., 14
+processo 0: v[4] = 0, 1, ..., 14
+processo 1: v[4] = 0, 1, ..., 14
+processo 2: v[4] = 0, 1, ..., 14
+processo 4: v[4] = 0, 1, ..., 14
+processo 5: v[4] = 0, 1, ..., 14
+processo 6: v[4] = 0, 1, ..., 14
+processo 3: v[4] = 0, 1, ..., 14
+```
