@@ -28,11 +28,11 @@
 int main(int argc, char *argv[])
 {
     int npes, myrank;
-    int np = 0, destination = 0;
+    int total = 0, destination = 0;
     MPI_Status status;
 
-    int erro = MPI_Init(&argc, &argv);
-    if (erro != MPI_SUCCESS)
+    int error = MPI_Init(&argc, &argv);
+    if (error != MPI_SUCCESS)
     {
         printf("Error initializing MPI environment!\n");
         exit(1);
@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
     if (npes == 1)
     {
         // Only one process
-        // Just print 0 and exit
+        // Just print 1 and exit
         printf("Only one process...\nTotal: 1\n");
 
         MPI_Finalize();
@@ -55,12 +55,12 @@ int main(int argc, char *argv[])
     {
         // Not first process
         // Listen for a message from the previous process
-        MPI_Recv(&np, 1, MPI_INT, myrank - 1, MESSAGE_TAG, MPI_COMM_WORLD, &status);
-        printf("processo %d: recebido %d\n", myrank, np);
+        MPI_Recv(&total, 1, MPI_INT, myrank - 1, MESSAGE_TAG, MPI_COMM_WORLD, &status);
+        printf("processo %d: recebido %d\n", myrank, total);
     }
 
     // Add our rank plus one
-    np += myrank + 1;
+    total += myrank + 1;
 
     if (npes == myrank + 1)
     {
@@ -75,17 +75,17 @@ int main(int argc, char *argv[])
     }
 
     // send message
-    MPI_Send(&np, 1, MPI_INT, destination, MESSAGE_TAG, MPI_COMM_WORLD);
-    printf("processo %d: enviado %d\n", myrank, np);
+    MPI_Send(&total, 1, MPI_INT, destination, MESSAGE_TAG, MPI_COMM_WORLD);
+    printf("processo %d: enviado %d\n", myrank, total);
 
     if (myrank == 0)
     {
         // First process
         // Listen for the message from the last process
-        MPI_Recv(&np, 1, MPI_INT, npes - 1, MESSAGE_TAG, MPI_COMM_WORLD, &status);
+        MPI_Recv(&total, 1, MPI_INT, npes - 1, MESSAGE_TAG, MPI_COMM_WORLD, &status);
 
-        printf("processo %d: recebido %d\n", myrank, np);
-        printf("Total: %d\n", np);
+        printf("processo %d: recebido %d\n", myrank, total);
+        printf("Total: %d\n", total);
     }
 
     MPI_Finalize();
