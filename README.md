@@ -4,6 +4,11 @@ Projects for Activity #1 of High Performance Computation (Computação de Alto D
 ## mpi-test
 Tries to initialize the MPI environment and prints a simple text message on success or error
 
+## mpi-hello-world
+Hello World using MPI
+
+Each spawned process will reply with a greeting
+
 ## mpi-somanp
 This program calculates the sum of the running processes spawned.
 
