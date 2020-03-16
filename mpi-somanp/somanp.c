@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
     {
         // Only one process
         // Just print 1 and exit
-        printf("Only one process...\nTotal: 1\n");
+        printf("Apenas um processo...\nTotal: 1\n");
 
         MPI_Finalize();
         return 0;
