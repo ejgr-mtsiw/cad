@@ -38,12 +38,12 @@ In each iteration of the algorithm all the processes with rank k < 2^i send the 
 
 Ex: `mpirun -np 8 repvb.out 15`
 ```c
-processo 7: v[4] = 0, 1, ..., 14
-processo 0: v[4] = 0, 1, ..., 14
-processo 1: v[4] = 0, 1, ..., 14
-processo 2: v[4] = 0, 1, ..., 14
-processo 4: v[4] = 0, 1, ..., 14
-processo 5: v[4] = 0, 1, ..., 14
-processo 6: v[4] = 0, 1, ..., 14
-processo 3: v[4] = 0, 1, ..., 14
+processo 7: v[15] = 0, 1, ..., 14
+processo 0: v[15] = 0, 1, ..., 14
+processo 1: v[15] = 0, 1, ..., 14
+processo 2: v[15] = 0, 1, ..., 14
+processo 4: v[15] = 0, 1, ..., 14
+processo 5: v[15] = 0, 1, ..., 14
+processo 6: v[15] = 0, 1, ..., 14
+processo 3: v[15] = 0, 1, ..., 14
 ```
