@@ -74,7 +74,6 @@ int getPreviusProcessRank(int rank, int npes)
 
 int main(int argc, char *argv[])
 {
-    MPI_Status status;
     int npes = 0, rank = 0, originTarget = 0, destinationTarget = 0;
     int i, j;
 
@@ -206,8 +205,8 @@ int main(int argc, char *argv[])
         y = malloc(dataLength * sizeof(float));
 
         // Receive the x and y data for this process
-        MPI_Recv(x, dataLength, MPI_FLOAT, 0, MESSAGE_TAG_INITIAL_X, MPI_COMM_WORLD, &status);
-        MPI_Recv(y, dataLength, MPI_FLOAT, 0, MESSAGE_TAG_INITIAL_Y, MPI_COMM_WORLD, &status);
+        MPI_Recv(x, dataLength, MPI_FLOAT, 0, MESSAGE_TAG_INITIAL_X, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Recv(y, dataLength, MPI_FLOAT, 0, MESSAGE_TAG_INITIAL_Y, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
 
     /*
@@ -245,11 +244,11 @@ int main(int argc, char *argv[])
             if (rank == 0)
             {
                 MPI_Send(yToSend, dataLength, MPI_FLOAT, destinationTarget, MESSAGE_TAG_Y_LINE, MPI_COMM_WORLD);
-                MPI_Recv(y, dataLength, MPI_FLOAT, originTarget, MESSAGE_TAG_Y_LINE, MPI_COMM_WORLD, &status);
+                MPI_Recv(y, dataLength, MPI_FLOAT, originTarget, MESSAGE_TAG_Y_LINE, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             }
             else
             {
-                MPI_Recv(y, dataLength, MPI_FLOAT, originTarget, MESSAGE_TAG_Y_LINE, MPI_COMM_WORLD, &status);
+                MPI_Recv(y, dataLength, MPI_FLOAT, originTarget, MESSAGE_TAG_Y_LINE, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 MPI_Send(yToSend, dataLength, MPI_FLOAT, destinationTarget, MESSAGE_TAG_Y_LINE, MPI_COMM_WORLD);
             }
         }
@@ -274,7 +273,7 @@ int main(int argc, char *argv[])
 
         for (i = 1; i < npes; i++)
         {
-            MPI_Recv(&jxiy, 1, MPI_DOUBLE, i, MESSAGE_TAG_SUB_TOTAL, MPI_COMM_WORLD, &status);
+            MPI_Recv(&jxiy, 1, MPI_DOUBLE, i, MESSAGE_TAG_SUB_TOTAL, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             Ti += jxiy;
         }
 
