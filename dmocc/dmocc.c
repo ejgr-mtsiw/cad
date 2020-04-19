@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
     /**
     * Data arrays
     */
-    float *y, *x, *yToSend;
+    float *y, *x, *yToReceive;
 
     /**
      * Current total
@@ -155,13 +155,13 @@ int main(int argc, char *argv[])
     // Length of the array to send to each process
     dataLength = n / npes;
 
-    // Buffer for the y array to send so we don't overwrite our data
-    yToSend = malloc(dataLength * sizeof(float));
+    // Buffer for the y array to receive so we don't overwrite our data
+    yToReceive = malloc(dataLength * sizeof(float));
 
     // The process that will send me the next y[]
     originTarget = getNextProcessRank(rank, npes);
 
-    // Process that will receive my yToSend[]
+    // Process that will receive my y[]
     destinationTarget = getPreviusProcessRank(rank, npes);
 
     /*
@@ -224,6 +224,19 @@ int main(int argc, char *argv[])
 
     for (int cycle = 0; cycle < npes; cycle++)
     {
+        // We already have our own data sent from #0 se we only need to
+        // send/recieve npes - 1 times
+        if (cycle < npes - 1)
+        {
+            // Trying to improve performance: As MPI_Isend doesn't block we'll
+            // send the data we have while we're working on the calculations
+            // Using Isend and Irecv we no longer need to impose a sending order
+            // Do Irecv before Isend:
+            // http://supercomputingblog.com/mpi/mpi-tutorial-5-asynchronous-communication/
+            MPI_Irecv(yToReceive, dataLength, MPI_FLOAT, originTarget, MESSAGE_TAG_Y_LINE, MPI_COMM_WORLD, &getRequest);
+            MPI_Isend(y, dataLength, MPI_FLOAT, destinationTarget, MESSAGE_TAG_Y_LINE, MPI_COMM_WORLD, &sendRequest);
+        }
+
         // Update Ti
         for (i = 0; i < dataLength; i++)
         {
@@ -231,25 +244,24 @@ int main(int argc, char *argv[])
             {
                 Ti += sqrtf(x[i] * x[i] + y[j] * y[j]);
             }
-
-            // Fill the send buffer with our current data
-            yToSend[i] = y[i];
         }
 
+        // We already have our own data sent from #0 se we only need to
+        // send/recieve npes - 1 times
         if (cycle < npes - 1)
         {
-            // Using Isend and Irecv we no longer need to impose a sending order
-            // Do Irecv before Isend:
-            // http://supercomputingblog.com/mpi/mpi-tutorial-5-asynchronous-communication/
-            MPI_Irecv(y, dataLength, MPI_FLOAT, originTarget, MESSAGE_TAG_Y_LINE, MPI_COMM_WORLD, &getRequest);
-            MPI_Isend(yToSend, dataLength, MPI_FLOAT, destinationTarget, MESSAGE_TAG_Y_LINE, MPI_COMM_WORLD, &sendRequest);
+            // we will change the data in the send buffer so we need to make
+            // sure it's safe to proceed
+            MPI_Wait(&sendRequest, MPI_STATUS_IGNORE);
 
             // making sure we have the data we need to work
             MPI_Wait(&getRequest, MPI_STATUS_IGNORE);
 
-            // we will change the data in the send buffer so we need to make
-            // sure it's safe to proceed
-            MPI_Wait(&sendRequest, MPI_STATUS_IGNORE);
+            for (i = 0; i < dataLength; i++)
+            {
+                // Fill the y values from the receive buffer
+                y[i] = yToReceive[i];
+            }
         }
     }
 
@@ -259,7 +271,8 @@ int main(int argc, char *argv[])
     {
         tf = MPI_Wtime();
         /* Elapsed time */
-        printf("\nElapsed time on task #4: %fs\n", tf - ti);
+        //printf("Elapsed time on task #4: %fs\n", tf - ti);
+        printf("%f\n", tf - ti);
     }
 
     /*
@@ -278,7 +291,7 @@ int main(int argc, char *argv[])
 
         // Calculate average
         double jxy = Ti / (n * n);
-        printf("\nA distância média dos elementos à origem é %.2f\n", jxy);
+        //printf("A distância média dos elementos à origem é %.2f\n", jxy);
     }
     else
     {
@@ -289,7 +302,7 @@ int main(int argc, char *argv[])
     // Free allocated memory
     free(x);
     free(y);
-    free(yToSend);
+    free(yToReceive);
 
     // Finalize the MPI environment
     MPI_Finalize();
