@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
     /**
     * Data arrays
     */
-    float *y, *x, *yToSend;
+    float *y, *x, *yToReceive;
 
     /**
      * Current total
@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
      */
     int n = 0;
 
-    //Initizlize MPI environment
+    //Initialize MPI environment
     int error = MPI_Init(&argc, &argv);
     if (error != MPI_SUCCESS)
     {
@@ -154,13 +154,13 @@ int main(int argc, char *argv[])
     // Length of the array to send to each process
     dataLength = n / npes;
 
-    // Buffer for the y array to send so we don't overwrite our data
-    yToSend = malloc(dataLength * sizeof(float));
+    // Buffer for the y array to receive so we don't overwrite our data
+    yToReceive = malloc(dataLength * sizeof(float));
 
     // The process that will send me the next y[]
     originTarget = getNextProcessRank(rank, npes);
 
-    // Process that will receive my yToSend[]
+    // Process that will receive my y[]
     destinationTarget = getPreviusProcessRank(rank, npes);
 
     /*
@@ -230,26 +230,28 @@ int main(int argc, char *argv[])
             {
                 Ti += sqrtf(x[i] * x[i] + y[j] * y[j]);
             }
-
-            // Fill the send buffer with our current data
-            yToSend[i] = y[i];
         }
 
         if (cycle < npes - 1)
         {
-            // Rank 0 will start the data transmission,
-            // but could be any other process.
-            // We just need to define who goes first so we
+            // Rank 0 will start the data transmission, but could be any
+            // other process. We just need to set one to send first so we
             // avoid blocking forever
             if (rank == 0)
             {
-                MPI_Send(yToSend, dataLength, MPI_FLOAT, destinationTarget, MESSAGE_TAG_Y_LINE, MPI_COMM_WORLD);
-                MPI_Recv(y, dataLength, MPI_FLOAT, originTarget, MESSAGE_TAG_Y_LINE, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                MPI_Send(y, dataLength, MPI_FLOAT, destinationTarget, MESSAGE_TAG_Y_LINE, MPI_COMM_WORLD);
+                MPI_Recv(yToReceive, dataLength, MPI_FLOAT, originTarget, MESSAGE_TAG_Y_LINE, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             }
             else
             {
-                MPI_Recv(y, dataLength, MPI_FLOAT, originTarget, MESSAGE_TAG_Y_LINE, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                MPI_Send(yToSend, dataLength, MPI_FLOAT, destinationTarget, MESSAGE_TAG_Y_LINE, MPI_COMM_WORLD);
+                MPI_Recv(yToReceive, dataLength, MPI_FLOAT, originTarget, MESSAGE_TAG_Y_LINE, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                MPI_Send(y, dataLength, MPI_FLOAT, destinationTarget, MESSAGE_TAG_Y_LINE, MPI_COMM_WORLD);
+            }
+
+            for (i = 0; i < dataLength; i++)
+            {
+                // Fill the y values from the receive buffer
+                y[i] = yToReceive[i];
             }
         }
     }
@@ -260,7 +262,8 @@ int main(int argc, char *argv[])
     {
         tf = MPI_Wtime();
         /* Elapsed time */
-        printf("\nElapsed time on task #4: %fs\n", tf - ti);
+        //printf("Elapsed time on task #4: %fs\n", tf - ti);
+        printf("%f\n", tf - ti);
     }
 
     /*
@@ -279,7 +282,7 @@ int main(int argc, char *argv[])
 
         // Calculate average
         double jxy = Ti / (n * n);
-        printf("\nA distância média dos elementos à origem é %.2f\n", jxy);
+        //printf("A distância média dos elementos à origem é %.2f\n", jxy);
     }
     else
     {
@@ -290,7 +293,7 @@ int main(int argc, char *argv[])
     // Free allocated memory
     free(x);
     free(y);
-    free(yToSend);
+    free(yToReceive);
 
     // Finalize the MPI environment
     MPI_Finalize();
