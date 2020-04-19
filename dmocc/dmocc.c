@@ -271,8 +271,7 @@ int main(int argc, char *argv[])
     {
         tf = MPI_Wtime();
         /* Elapsed time */
-        //printf("Elapsed time on task #4: %fs\n", tf - ti);
-        printf("%f\n", tf - ti);
+        printf("Elapsed time on task #4: %fs\n", tf - ti);
     }
 
     /*
@@ -291,7 +290,7 @@ int main(int argc, char *argv[])
 
         // Calculate average
         double jxy = Ti / (n * n);
-        //printf("A distância média dos elementos à origem é %.2f\n", jxy);
+        printf("A distância média dos elementos à origem é %.2f\n", jxy);
     }
     else
     {
