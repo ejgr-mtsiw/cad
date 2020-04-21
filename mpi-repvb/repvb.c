@@ -58,10 +58,11 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+    data = malloc(sizeof(int) * n);
+
     if (myrank == 0)
     {
         // Process #0 initializes the data array
-        data = malloc(sizeof(int) * n);
         for (int i = 0; i < n; i++)
         {
             data[i] = i;
@@ -92,13 +93,7 @@ int main(int argc, char *argv[])
     // Print (part of) the array
     printf("processo %d: v[%d] = %d, %d, ..., %d\n", myrank, n, data[0], data[1], data[n - 1]);
 
-    // Only process #0 needs to free the data array, because it was allocated
-    // using malloc.
-    // The MPI implementation will take care of it for the other processes
-    if (myrank == 0)
-    {
-        free(data);
-    }
+    free(data);
 
     MPI_Finalize();
     return 0;
