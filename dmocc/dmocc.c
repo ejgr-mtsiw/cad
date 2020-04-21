@@ -57,19 +57,15 @@
  */
 int getNextProcessRank(int rank, int npes)
 {
-    return (rank + 1) % (npes);
+    return (rank + 1) % npes;
 }
 
 /**
  * Gets previuos process rank
  */
-int getPreviusProcessRank(int rank, int npes)
+int getPreviousProcessRank(int rank, int npes)
 {
-    if (rank == 0)
-    {
-        return npes - 1;
-    }
-    return rank - 1;
+    return (npes + rank - 1) % npes;
 }
 
 int main(int argc, char *argv[])
@@ -162,7 +158,7 @@ int main(int argc, char *argv[])
     originTarget = getNextProcessRank(rank, npes);
 
     // Process that will receive my y[]
-    destinationTarget = getPreviusProcessRank(rank, npes);
+    destinationTarget = getPreviousProcessRank(rank, npes);
 
     /*
     2- O processo P0 cria os vetores x e y com uma distribuição uniforme
