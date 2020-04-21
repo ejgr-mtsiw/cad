@@ -62,17 +62,8 @@ int main(int argc, char *argv[])
     // Add our rank plus one
     total += myrank + 1;
 
-    if (npes == myrank + 1)
-    {
-        // We're the last process
-        // Send total to process 0
-        destination = 0;
-    }
-    else
-    {
-        // pass it along
-        destination = myrank + 1;
-    }
+    // pass it along
+    destination = (myrank + 1) % npes;
 
     // send message
     MPI_Send(&total, 1, MPI_INT, destination, MESSAGE_TAG, MPI_COMM_WORLD);
