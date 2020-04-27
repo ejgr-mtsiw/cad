@@ -7,18 +7,12 @@
 #include <stdlib.h>
 #include <mpi.h>
 
-// Tag to use on our messages
-#define MESSAGE_TAG 1
-
 int main(int argc, char *argv[])
 {
-    int npes, myrank;
-    int currentPower = 1, n = 0;
+    int npes = 0, myrank = 0, n = 0;
     int *data;
-    MPI_Status status;
 
-    int error = MPI_Init(&argc, &argv);
-    if (error != MPI_SUCCESS)
+    if (MPI_Init(&argc, &argv) != MPI_SUCCESS)
     {
         printf("Error initializing MPI environment!\n");
         exit(1);
@@ -62,14 +56,17 @@ int main(int argc, char *argv[])
         {
             data[i] = i;
         }
-
-        
     }
-    
+
     MPI_Bcast(data, n, MPI_INT, 0, MPI_COMM_WORLD);
-    
+
     // Print (part of) the array
-    printf("Processo %d: v[%d] = %d, %d, ..., %d\n", myrank, n, data[0], data[1], data[n - 1]);
+    printf("Processo %d: v[%d] = %d, %d, ..., %d\n",
+           myrank,
+           n,
+           data[0],
+           data[1],
+           data[n - 1]);
 
     free(data);
 
