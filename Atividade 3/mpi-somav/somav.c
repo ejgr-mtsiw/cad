@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
      */
     float total = 0.0;
 
-    //Initizlize MPI environment
+    //Initialize MPI environment
     if (MPI_Init(&argc, &argv) != MPI_SUCCESS)
     {
         printf("Error initializing MPI environment!\n");
@@ -199,8 +199,7 @@ int main(int argc, char *argv[])
 
     if (myrank == 0)
     {
-        printf("Processo %d: ***************************** soma total = %.2f\n",
-               myrank, total);
+        printf("Processo %d: ***************************** soma total = %.2f\n", myrank, total);
         free(data);
     }
 
