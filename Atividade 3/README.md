@@ -8,3 +8,6 @@ Reimplement the array sharing exercise from Atividade 1/mpi-repvb but using MPI_
 This program shares an array between all the processes in the pool using
 blocks of similar, but variable, size using MPI_Scatterv
 
+## mpi-somav
+This program uses MPI_Reduce to aggregate partial sums calculated from a random
+array scattered using MPI_Scatterv
