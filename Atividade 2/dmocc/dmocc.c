@@ -182,6 +182,14 @@ int main(int argc, char *argv[])
         }
     }
 
+    // Sync everyone
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank == 0)
+    {
+        // Starting time
+        ti = MPI_Wtime();
+    }
+
     /*
      3- P0 envia os subvetores xi ,yi (de dimensão n/np cada) para os
      outros processos 1,...,np.
@@ -210,14 +218,6 @@ int main(int argc, char *argv[])
      4- Ciclo: Cada processo Pi atualiza Ti = Ti + Jxiyi , envia yi
      para Pi-1 e recebe yi+1 de Pi+1
     */
-    // Sync everyone
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (rank == 0)
-    {
-        // Starting time
-        ti = MPI_Wtime();
-    }
-
     for (int cycle = 0; cycle < npes; cycle++)
     {
         // We already have our own data sent from #0 se we only need to
@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
         {
             for (j = 0; j < dataLength; j++)
             {
-                Ti += sqrtf(x[i] * x[i] + y[j] * y[j]);
+                Ti += sqrt(x[i] * x[i] + y[j] * y[j]);
             }
         }
 
@@ -261,15 +261,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    // Sync everyone
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (rank == 0)
-    {
-        tf = MPI_Wtime();
-        /* Elapsed time */
-        printf("Elapsed time on task #4: %fs\n", tf - ti);
-    }
-
     /*
      5- P0 recebe os resultados parciais Jxiy dos outros processos 1,...,np.
     */
@@ -283,15 +274,24 @@ int main(int argc, char *argv[])
             MPI_Recv(&jxiy, 1, MPI_DOUBLE, i, MESSAGE_TAG_SUB_TOTAL, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             Ti += jxiy;
         }
-
-        // Calculate average
-        double jxy = Ti / (n * n);
-        printf("A distância média dos elementos à origem é %.2f\n", jxy);
     }
     else
     {
         // Send our partial sum to rank 0
         MPI_Send(&Ti, 1, MPI_DOUBLE, 0, MESSAGE_TAG_SUB_TOTAL, MPI_COMM_WORLD);
+    }
+
+    // Sync everyone
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank == 0)
+    {
+        tf = MPI_Wtime();
+        /* Elapsed time */
+        printf("Elapsed time on task #3 ~ #6: %fs\n", tf - ti);
+
+        // Calculate average
+        double jxy = Ti / (n * n);
+        printf("A distância média dos elementos à origem é %.2f\n", jxy);
     }
 
     // Free allocated memory
