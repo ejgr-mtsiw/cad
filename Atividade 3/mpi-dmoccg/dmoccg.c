@@ -283,7 +283,7 @@ int main(int argc, char *argv[])
         {
             MPI_Iscatterv(yToSend,
                           sendcounts,
-                          &displs[cycle],
+                          &displs[cycle + 1],
                           MPI_FLOAT,
                           yBuffer,
                           dataLength,
@@ -322,7 +322,7 @@ int main(int argc, char *argv[])
     MPI_Reduce(&localTotal, &globalTotal, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
     // Sync everyone
-    //MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
     if (myrank == 0)
     {
         tf = MPI_Wtime();
