@@ -15,20 +15,9 @@
  */
 
 /**
- * 1- O valor de n≥np é dado como argumento ao programa. Para facilitar o
- * programa, n é arredondado ao múltiplo de np imediatamente igual ou
- * inferior.
- * 2- O processo P0 cria os vetores x e y com uma distribuição uniforme
- * entre -2 e 2 com o auxílio da função rand() inicializada previamente
- * com a semente 223.
- * 3- P0 envia os subvetores xi ,yi (de dimensão n/np cada) para os
- * outros processos 1,...,np.
- * 4- Ciclo: Cada processo Pi atualiza Ti = Ti + Jxiyi , envia yi
- * para Pi-1 e recebe yi+1 de Pi+1
- * 5- P0 recebe os resultados parciais Jxiy dos outros processos
- * 1,...,np.
- * 6- P0 calcula a soma dos resultados parciais, divide por n^2 e imprime
- * o valor final Jxy.
+ * Escreva o programa dmoccg.c em linguagem C/MPI semelhante ao programa
+ * dmocc.c do exercício S2.4 mas utilizando as operações de comunicação
+ * globais Scatter e Reduce.
  */
 
 #include <stdio.h>
@@ -44,24 +33,6 @@
 
 // Min for rand()
 #define MIN_RAND_VALUE -2
-
-// First element controlled by process id out of p processes, array length n
-#define BLOCK_LOW(id, p, n) ((id) * (n) / (p))
-
-// Last element controlled by process id out of p processes, array length n
-#define BLOCK_HIGH(id, p, n) (BLOCK_LOW((id + 1), p, n) - 1)
-
-// Size of the block controlled by process id out of p processes, array length n
-#define BLOCK_SIZE(id, p, n) (BLOCK_LOW((id + 1), p, n) - BLOCK_LOW(id, p, n))
-
-// Process that controls item index from array with length n, p processes
-#define BLOCK_OWNER(index, p, n) (((p) * ((index) + 1) - 1) / (n))
-
-// Get next process rank
-#define NEXT_PROCESS(id, p) (((id) + 1) % (p))
-
-// Get previous process rank
-#define PREV_PROCESS(id, p) ((((p) + (id)) - 1) % (p))
 
 int main(int argc, char *argv[])
 {
