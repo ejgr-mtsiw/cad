@@ -50,7 +50,7 @@
 /**
  * Struct to store work orders
  */
-typedef struct WORKORDER
+typedef struct workorder
 {
     int process;
     long workload;
@@ -109,14 +109,9 @@ int main(int argc, char *argv[])
         int workers = npes - 1;
         long workToBeAssigned = NUMBER_OF_POINTS, workAssigned = 0, workLoad = 0;
         long slaveResult = 0;
-        //workorder **workLog;
         workorder workLog[(NUMBER_OF_POINTS / (MIN_WORK_LOAD * WORK_LOAD_STEP)) + 1];
         int currentWorkOrder = 0;
         MPI_Status mpiStatus;
-
-        // Allocate memory for work log
-        // Worst case scenario all rands() return 1
-        //workLog = malloc(sizeof(workorder *) * ((int)(NUMBER_OF_POINTS / MIN_WORK_LOAD) + 1));
 
         while (workers > 0)
         {
@@ -125,11 +120,8 @@ int main(int argc, char *argv[])
 
             if (mpiStatus.MPI_TAG == SLAVE_RESULT)
             {
-                //printf("Recebi %d pontos do escravo %d!\n", slaveResult, mpiStatus.MPI_SOURCE);
                 nPointsInside += slaveResult;
             }
-
-            //printf("DEBUG: workAssigned:%7d, workToBeAssigned:%7d, workToBeDone:%7d, p:%d", workAssigned, workToBeAssigned, NUMBER_OF_POINTS, mpiStatus.MPI_SOURCE);
 
             // Send work order
             if (workToBeAssigned == 0)
@@ -151,32 +143,21 @@ int main(int argc, char *argv[])
                 workAssigned += workLoad;
 
                 // Log work order
-                // workLog[currentWorkOrder] = malloc(sizeof(workorder));
-                // workLog[currentWorkOrder]->process = mpiStatus.MPI_SOURCE;
-                // workLog[currentWorkOrder]->workload = workLoad;
                 workLog[currentWorkOrder].process = mpiStatus.MPI_SOURCE;
                 workLog[currentWorkOrder].workload = workLoad;
                 currentWorkOrder++;
             }
 
-            //printf(", workLoad: %7d, workers:%d\n", workLoad, workers);
-
             MPI_Send(&workLoad, 1, MPI_LONG, mpiStatus.MPI_SOURCE, SLAVE_WORK, MPI_COMM_WORLD);
         }
 
-        //printf("nPointsInside: %d\n", nPointsInside);
         printf("Estimativa de pi = %.8f\n", (double)nPointsInside / NUMBER_OF_POINTS * 4);
 
         printf("Relatório trabalho total atribuído [%d]\n", NUMBER_OF_POINTS);
-
         for (int i = 0; i < currentWorkOrder; i++)
         {
             printf("Escravo %d atribuído trabalho %d\n", workLog[i].process, workLog[i].workload);
-            //printf("Escravo %d atribuído trabalho %d\n", workLog[i]->process, workLog[i]->workload);
-            //free(workLog[i]);
         }
-
-        //free(workLog);
     }
     else
     {
@@ -195,11 +176,8 @@ int main(int argc, char *argv[])
 
         for (;;)
         {
-            //printf("Escravo %d à espera de trabalho!\n", myrank);
             // Wait for workload info
             MPI_Recv(&nPointsToProcess, 1, MPI_LONG, 0, SLAVE_WORK, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-            //printf("Escravo %d recebeu %d trabalho! ", myrank, nPointsToProcess);
 
             if (nPointsToProcess <= 0)
             {
@@ -220,7 +198,6 @@ int main(int argc, char *argv[])
                 }
             }
 
-            //printf("Escravo %d enviou %d pontos dentro!\n", myrank, nPointsInside);
             MPI_Send(&nPointsInside, 1, MPI_LONG, 0, SLAVE_RESULT, MPI_COMM_WORLD);
         }
 
