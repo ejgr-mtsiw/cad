@@ -12,7 +12,7 @@
 /**
  * Number of points to generate
  */
-#define NUMBER_OF_POINTS 500000000
+#define NUMBER_OF_POINTS 5000000000L
 
 /**
  * Minimum number of points in a workload (* WORK_LOAD_STEP)
@@ -155,10 +155,10 @@ int main(int argc, char *argv[])
 
         printf("Estimativa de pi = %.8f\n", (double)nPointsInside / NUMBER_OF_POINTS * 4);
 
-        printf("Relatório trabalho total atribuído [%d]\n", NUMBER_OF_POINTS);
+        printf("Relatório do trabalho total atribuído [%ld]\n", NUMBER_OF_POINTS);
         for (int i = 0; i < currentWorkOrder; i++)
         {
-            printf("Escravo %d atribuído trabalho %d\n", workLog[i].process, workLog[i].workload);
+            printf("Escravo %d atribuído trabalho %ld\n", workLog[i].process, workLog[i].workload);
         }
     }
     else
