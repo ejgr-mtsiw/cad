@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <mpi.h>
-#include <time.h>
+#include <sys/time.h>
 
 /**
  * Number of points to generate
@@ -99,8 +99,12 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    // Initialize the random number generator with RAND_SEED
-    srand(time(0));
+    // Initialize the random number generator with a random seed
+    // We're using the useconds because the processes are started in rapid
+    // succession so we need a subsecond seed generator to avoid repeating seeds
+    struct timeval time;
+    gettimeofday(&time, NULL);
+    srand(time.tv_usec);
 
     if (myrank == 0)
     {
@@ -131,7 +135,7 @@ int main(int argc, char *argv[])
             else
             {
                 // Generate random workload without going over the limit
-                workLoad = (rand() % (MAX_WORK_LOAD - MIN_WORK_LOAD) + MIN_WORK_LOAD) * WORK_LOAD_STEP;
+                workLoad = (MIN_WORK_LOAD + rand() % (MAX_WORK_LOAD - MIN_WORK_LOAD + 1)) * WORK_LOAD_STEP;
                 if (workLoad > workToBeAssigned)
                 {
                     workLoad = workToBeAssigned;
