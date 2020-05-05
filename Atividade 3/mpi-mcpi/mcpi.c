@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <mpi.h>
+#include <time.h>
 
 /**
  * Number of points to generate
@@ -27,9 +28,6 @@
  * Step for the random workload distribution
  */
 #define WORK_LOAD_STEP 1000000
-
-// Seed for rand()
-#define RAND_SEED 223
 
 // Communication tags
 /**
@@ -102,7 +100,7 @@ int main(int argc, char *argv[])
     }
 
     // Initialize the random number generator with RAND_SEED
-    srand(RAND_SEED);
+    srand(time(0));
 
     if (myrank == 0)
     {
