@@ -38,7 +38,7 @@
 /**
  * Prints the array line with debug info
  */
-void printArrayLine(int rank, int n, float *data)
+void printArrayLine(int rank, int n, double *data)
 {
     switch (n)
     {
@@ -89,12 +89,12 @@ int main(int argc, char *argv[])
     /**
     * Array to sum
     */
-    float *data;
+    double *data;
 
     /**
     * Receive buffer
     */
-    float *recvbuf;
+    double *recvbuf;
 
     /**
     * Send counts
@@ -109,12 +109,12 @@ int main(int argc, char *argv[])
     /**
      * Current total
      */
-    float ti = 0.0;
+    double ti = 0.0;
 
     /**
      * Array total
      */
-    float total = 0.0;
+    double total = 0.0;
 
     //Initialize MPI environment
     if (MPI_Init(&argc, &argv) != MPI_SUCCESS)
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
 
     // Check input arguments
-    if (argc < 2 || atoi(argv[1]) < 1)
+    if (argc < 2 || atoi(argv[1]) < 0)
     {
         // Only process #0 reports the error to avoid spamming the command line
         if (myrank == 0)
@@ -144,7 +144,7 @@ int main(int argc, char *argv[])
     if (myrank == 0)
     {
         // allocate memory
-        data = malloc(sizeof(float) * n);
+        data = malloc(sizeof(double) * n);
 
         // Initialize the random number generator with SEED
         srand(RAND_SEED);
@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
         // Fill both arrays with values between MIN_RAND_VALUE and MAX_RAND_VALUE
         for (int i = 0; i < n; i++)
         {
-            data[i] = (float)rand() / RAND_MAX * (MAX_RAND_VALUE - MIN_RAND_VALUE) + MIN_RAND_VALUE;
+            data[i] = (double)rand() / RAND_MAX * (MAX_RAND_VALUE - MIN_RAND_VALUE) + MIN_RAND_VALUE;
         }
     }
 
@@ -169,17 +169,17 @@ int main(int argc, char *argv[])
     }
 
     // Allocate receive buffer
-    recvbuf = malloc(sizeof(float) * sendcounts[myrank]);
+    recvbuf = malloc(sizeof(double) * sendcounts[myrank]);
 
     // Scatter the array by the processes using the distribution set by the
     // sendcounts and displs arrays
     MPI_Scatterv(data,
                  sendcounts,
                  displs,
-                 MPI_FLOAT,
+                 MPI_DOUBLE,
                  recvbuf,
                  sendcounts[myrank],
-                 MPI_FLOAT,
+                 MPI_DOUBLE,
                  0,
                  MPI_COMM_WORLD);
 
@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
     printf("Processo %d: soma parcial = %.2f\n", myrank, ti);
 
     // Reduce all sums and store result in total
-    MPI_Reduce(&ti, &total, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&ti, &total, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
     if (myrank == 0)
     {
