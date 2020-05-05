@@ -12,7 +12,7 @@
 /**
  * Number of points to generate
  */
-#define NUMBER_OF_POINTS 5000000000L
+#define NUMBER_OF_POINTS 500000000L
 
 /**
  * Minimum number of points in a workload (* WORK_LOAD_STEP)
