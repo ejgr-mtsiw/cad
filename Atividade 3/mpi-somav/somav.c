@@ -97,6 +97,11 @@ int main(int argc, char *argv[])
     double *recvbuf;
 
     /**
+     * The length of the receive buffer
+     */
+    int lrecvbuf = 0;
+
+    /**
     * Send counts
     */
     int *sendcounts;
@@ -154,22 +159,24 @@ int main(int argc, char *argv[])
         {
             data[i] = (double)rand() / RAND_MAX * (MAX_RAND_VALUE - MIN_RAND_VALUE) + MIN_RAND_VALUE;
         }
+
+        // Allocate sendcounts array
+        sendcounts = malloc(sizeof(int) * npes);
+
+        // Allocate displacements array
+        displs = malloc(sizeof(int) * npes);
+
+        for (int i = 0; i < npes; i++)
+        {
+            sendcounts[i] = BLOCK_SIZE(i, npes, n);
+            displs[i] = BLOCK_LOW(i, npes, n);
+        }
     }
 
-    // Allocate sendcounts array
-    sendcounts = malloc(sizeof(int) * npes);
-
-    // Allocate displacements array
-    displs = malloc(sizeof(int) * npes);
-
-    for (int i = 0; i < npes; i++)
-    {
-        sendcounts[i] = BLOCK_SIZE(i, npes, n);
-        displs[i] = BLOCK_LOW(i, npes, n);
-    }
+    lrecvbuf = BLOCK_SIZE(myrank, npes, n);
 
     // Allocate receive buffer
-    recvbuf = malloc(sizeof(double) * sendcounts[myrank]);
+    recvbuf = malloc(sizeof(double) * lrecvbuf);
 
     // Scatter the array by the processes using the distribution set by the
     // sendcounts and displs arrays
@@ -178,16 +185,16 @@ int main(int argc, char *argv[])
                  displs,
                  MPI_DOUBLE,
                  recvbuf,
-                 sendcounts[myrank],
+                 lrecvbuf,
                  MPI_DOUBLE,
                  0,
                  MPI_COMM_WORLD);
 
     // Print debug line
-    printArrayLine(myrank, sendcounts[myrank], recvbuf);
+    printArrayLine(myrank, lrecvbuf, recvbuf);
 
     // Calculate local sum
-    for (int i = 0; i < sendcounts[myrank]; i++)
+    for (int i = 0; i < lrecvbuf; i++)
     {
         ti += recvbuf[i];
     }
@@ -200,11 +207,12 @@ int main(int argc, char *argv[])
     if (myrank == 0)
     {
         printf("Processo %d: ***************************** soma total = %.2f\n", myrank, total);
+
         free(data);
+        free(sendcounts);
+        free(displs);
     }
 
-    free(sendcounts);
-    free(displs);
     free(recvbuf);
 
     MPI_Finalize();
