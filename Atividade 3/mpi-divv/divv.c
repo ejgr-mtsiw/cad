@@ -22,7 +22,7 @@
 int main(int argc, char *argv[])
 {
     int npes = 0, myrank = 0, n = 0;
-    int *sendbuf, *recvbuf, *sendcounts, *displs;
+    int *data, nItemsToProcess = 0, *sendcounts, *displs;
 
     if (MPI_Init(&argc, &argv) != MPI_SUCCESS)
     {
@@ -47,6 +47,7 @@ int main(int argc, char *argv[])
 
     n = atoi(argv[1]);
 
+    // Number of numbers to process must be >= 3 * npes
     if (n < 3 * npes)
     {
         // Only process #0 reports the error to avoid spamming the command line
@@ -60,61 +61,86 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+    nItemsToProcess = BLOCK_SIZE(myrank, npes, n);
+
     if (myrank == 0)
     {
-        sendbuf = malloc(sizeof(int) * n);
+        data = malloc(sizeof(int) * n);
 
         // Process #0 initializes the array to be shared
         for (int i = 0; i < n; i++)
         {
-            sendbuf[i] = i;
+            data[i] = i;
         }
+
+        // Allocate sendcounts array
+        sendcounts = malloc(sizeof(int) * npes);
+
+        // Allocate displacements array
+        displs = malloc(sizeof(int) * npes);
+
+        for (int i = 0; i < npes; i++)
+        {
+            sendcounts[i] = BLOCK_SIZE(i, npes, n);
+            displs[i] = BLOCK_LOW(i, npes, n);
+        }
+
+        // Scatter the array by the processes using the distribution set by the
+        // sendcounts and displs arrays. Root uses MPI_IN_PLACE so no data
+        // is ever sent, saving one send/receive
+        // https://www.open-mpi.org/doc/v4.0/man3/MPI_Scatterv.3.php#toc8
+        MPI_Scatterv(data,
+                     sendcounts,
+                     displs,
+                     MPI_INT,
+                     MPI_IN_PLACE,
+                     nItemsToProcess,
+                     MPI_INT,
+                     0,
+                     MPI_COMM_WORLD);
     }
-
-    // Allocate sendcounts array
-    sendcounts = malloc(sizeof(int) * npes);
-
-    // Allocate displacements array
-    displs = malloc(sizeof(int) * npes);
-
-    for (int i = 0; i < npes; i++)
+    else
     {
-        sendcounts[i] = BLOCK_SIZE(i, npes, n);
-        displs[i] = BLOCK_LOW(i, npes, n);
+        // Allocate receive buffer
+        // Caso existam elementos com 0 items para processar:
+        // Upon successful completion with size not equal to 0, malloc() shall
+        // return a pointer to the allocated space. If size is 0, either a null
+        // pointer or a unique pointer that can be successfully passed to
+        // free() shall be returned.
+        // https://pubs.opengroup.org/onlinepubs/009695399/functions/malloc.html
+        data = malloc(sizeof(int) * nItemsToProcess);
+
+        // Receive the scattered data
+        // All arguments to the function are significant on process root,
+        // while on other processes, only arguments recvbuf, recvcount,
+        // recvtype, root, comm are significant.
+        MPI_Scatterv(data,
+                     sendcounts,
+                     displs,
+                     MPI_INT,
+                     data,
+                     nItemsToProcess,
+                     MPI_INT,
+                     0,
+                     MPI_COMM_WORLD);
     }
-
-    // Allocate receive buffer
-    recvbuf = malloc(sizeof(int) * sendcounts[myrank]);
-
-    // Scatter the array by the processes using the distribution set by the
-    // sendcounts and displs arrays
-    MPI_Scatterv(sendbuf,
-                 sendcounts,
-                 displs,
-                 MPI_INT,
-                 recvbuf,
-                 sendcounts[myrank],
-                 MPI_INT,
-                 0,
-                 MPI_COMM_WORLD);
 
     // Print (part of) the array
     printf("Processo %d: v[%d] = %d, %d, ... , %d\n",
            myrank,
-           sendcounts[myrank],
-           recvbuf[0],
-           recvbuf[1],
-           recvbuf[sendcounts[myrank] - 1]);
+           nItemsToProcess,
+           data[0],
+           data[1],
+           data[nItemsToProcess - 1]);
 
     // Free memory
     if (myrank == 0)
     {
-        free(sendbuf);
+        free(sendcounts);
+        free(displs);
     }
 
-    free(sendcounts);
-    free(displs);
-    free(recvbuf);
+    free(data);
 
     MPI_Finalize();
     return 0;
