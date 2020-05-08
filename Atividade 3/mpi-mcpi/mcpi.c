@@ -8,26 +8,32 @@
 #include <math.h>
 #include <mpi.h>
 #include <sys/time.h>
+#include <stdbool.h>
 
 /**
  * Number of points to generate
  */
-#define NUMBER_OF_POINTS 500000000L
+#define N_POINTS 500000000L
 
 /**
- * Minimum number of points in a workload (* WORK_LOAD_STEP)
+ * Minimum number of points in a workload (* WORKLOAD_STEP)
  */
-#define MIN_WORK_LOAD 1
+#define MIN_WORKLOAD 1
 
 /**
- * Maximum number of points in a workload (* WORK_LOAD_STEP)
+ * Maximum number of points in a workload (* WORKLOAD_STEP)
  */
-#define MAX_WORK_LOAD 10
+#define MAX_WORKLOAD 10
 
 /**
  * Step for the random workload distribution
  */
-#define WORK_LOAD_STEP 1000000
+#define WORKLOAD_STEP 1000000
+
+/**
+ * Calculte random workload based on de #define's above
+ */
+#define RANDOM_WORKLOAD ((MIN_WORKLOAD + rand() % (MAX_WORKLOAD - MIN_WORKLOAD + 1)) * WORKLOAD_STEP)
 
 // Communication tags
 /**
@@ -67,14 +73,9 @@ int main(int argc, char *argv[])
     int myrank = 0;
 
     /**
-     * Timing variables
-     */
-    double ti, tf;
-
-    /**
      * Number of points where x^2 + y^2 <= 1
      */
-    long nPointsInside = 0;
+    long nPointsIn = 0;
 
     //Initialize MPI environment
     if (MPI_Init(&argc, &argv) != MPI_SUCCESS)
@@ -100,7 +101,7 @@ int main(int argc, char *argv[])
     }
 
     // Initialize the random number generator with a random seed
-    // We're using the useconds because the processes are started in rapid
+    // We're using useconds because the processes are started in rapid
     // succession so we need a subsecond seed generator to avoid repeating seeds
     struct timeval time;
     gettimeofday(&time, NULL);
@@ -108,57 +109,126 @@ int main(int argc, char *argv[])
 
     if (myrank == 0)
     {
-        int workers = npes - 1;
-        long workToBeAssigned = NUMBER_OF_POINTS, workAssigned = 0, workLoad = 0;
+        /**
+         * Number of slaves
+         */
+        int slaves = npes - 1;
+
+        /**
+         * Remaining work to be done
+         */
+        long workToBeAssigned = N_POINTS;
+
+        /**
+         * Workload
+         */
+        long workload = 0;
+
+        /**
+         * Result from slave process
+         */
         long slaveResult = 0;
-        workorder workLog[(NUMBER_OF_POINTS / (MIN_WORK_LOAD * WORK_LOAD_STEP)) + 1];
+
+        /**
+         * Work log - We're allocating the full array (worst case scenario)
+         * to avoid having to do dynamic allocation
+         * Best case scenario for 500M points in 1M to 10M workloads:
+         * array_length: 50 -> wasted 450*12 bytes, avoided 50 malloc()
+         * Worst case:
+         * array_length: 500 -> wasted 0 bytes, avoided 500 malloc()
+         */
+        workorder workLog[(N_POINTS / (MIN_WORKLOAD * WORKLOAD_STEP)) + 1];
+
+        /**
+         * Work log index
+         */
         int currentWorkOrder = 0;
+
+        /**
+         * MPI_Status used to differentiate between request types
+         */
         MPI_Status mpiStatus;
 
-        while (workers > 0)
+        /**
+         * MPI_Request to use MPI_Isend
+         */
+        MPI_Request mpiRequest;
+
+        /**
+         * After the first send we need to MPI_Wait before changing workload
+         */
+        bool firstSend = true;
+
+        while (slaves > 0)
         {
             // Wait for incoming calls
-            MPI_Recv(&slaveResult, 1, MPI_LONG, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &mpiStatus);
+            MPI_Recv(&slaveResult,
+                     1,
+                     MPI_LONG,
+                     MPI_ANY_SOURCE,
+                     MPI_ANY_TAG,
+                     MPI_COMM_WORLD,
+                     &mpiStatus);
 
+            // We can receive 2 types of calls:
+            // SLAVE_READY when the slave is ready to start working
+            // SLAVE_RESULT if it has data to be processed
             if (mpiStatus.MPI_TAG == SLAVE_RESULT)
             {
-                nPointsInside += slaveResult;
+                nPointsIn += slaveResult;
+            }
+
+            // Making sure we can change workLoad
+            if (firstSend)
+            {
+                firstSend = false;
+            }
+            else
+            {
+                MPI_Wait(&mpiRequest, MPI_STATUS_IGNORE);
             }
 
             // Send work order
             if (workToBeAssigned == 0)
             {
                 // We already assigned all the work, so this slave is dismissed
-                workLoad = 0;
-                workers--;
+                workload = 0;
+                slaves--;
             }
             else
             {
                 // Generate random workload without going over the limit
-                workLoad = (MIN_WORK_LOAD + rand() % (MAX_WORK_LOAD - MIN_WORK_LOAD + 1)) * WORK_LOAD_STEP;
-                if (workLoad > workToBeAssigned)
+                workload = RANDOM_WORKLOAD;
+                if (workload > workToBeAssigned)
                 {
-                    workLoad = workToBeAssigned;
+                    workload = workToBeAssigned;
                 }
 
-                workToBeAssigned -= workLoad;
-                workAssigned += workLoad;
+                workToBeAssigned -= workload;
 
                 // Log work order
                 workLog[currentWorkOrder].process = mpiStatus.MPI_SOURCE;
-                workLog[currentWorkOrder].workload = workLoad;
+                workLog[currentWorkOrder].workload = workload;
                 currentWorkOrder++;
             }
 
-            MPI_Send(&workLoad, 1, MPI_LONG, mpiStatus.MPI_SOURCE, SLAVE_WORK, MPI_COMM_WORLD);
+            MPI_Isend(&workload,
+                      1,
+                      MPI_LONG,
+                      mpiStatus.MPI_SOURCE,
+                      SLAVE_WORK,
+                      MPI_COMM_WORLD,
+                      &mpiRequest);
         }
 
-        printf("Estimativa de pi = %.8f\n", (double)nPointsInside / NUMBER_OF_POINTS * 4);
+        printf("Estimativa de pi = %.8f\n", (double)nPointsIn / N_POINTS * 4);
 
-        printf("Relatório do trabalho total atribuído [%ld]\n", NUMBER_OF_POINTS);
+        printf("Relatório do trabalho total atribuído [%ld]\n", N_POINTS);
         for (int i = 0; i < currentWorkOrder; i++)
         {
-            printf("Escravo %d atribuído trabalho %ld\n", workLog[i].process, workLog[i].workload);
+            printf("Escravo %d atribuído trabalho %ld\n",
+                   workLog[i].process,
+                   workLog[i].workload);
         }
     }
     else
@@ -174,33 +244,46 @@ int main(int argc, char *argv[])
         double rX, rY;
 
         // Request first work order
-        MPI_Send(NULL, 0, MPI_LONG, 0, SLAVE_READY, MPI_COMM_WORLD);
+        MPI_Sendrecv(NULL,
+                     0,
+                     MPI_LONG,
+                     0,
+                     SLAVE_READY,
+                     &nPointsToProcess,
+                     1,
+                     MPI_LONG,
+                     0,
+                     SLAVE_WORK,
+                     MPI_COMM_WORLD,
+                     MPI_STATUS_IGNORE);
 
-        for (;;)
+        while (nPointsToProcess > 0)
         {
-            // Wait for workload info
-            MPI_Recv(&nPointsToProcess, 1, MPI_LONG, 0, SLAVE_WORK, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-            if (nPointsToProcess <= 0)
-            {
-                // No more work for us -> exit
-                break;
-            }
-
-            nPointsInside = 0;
+            nPointsIn = 0;
 
             for (int j = 0; j < nPointsToProcess; j++)
             {
                 rX = (double)rand() / RAND_MAX;
                 rY = (double)rand() / RAND_MAX;
 
-                if ((rX * rX + rY * rY) <= 1)
+                if ((rX * rX + rY * rY) <= 1.0)
                 {
-                    nPointsInside++;
+                    nPointsIn++;
                 }
             }
 
-            MPI_Send(&nPointsInside, 1, MPI_LONG, 0, SLAVE_RESULT, MPI_COMM_WORLD);
+            MPI_Sendrecv(&nPointsIn,
+                         1,
+                         MPI_LONG,
+                         0,
+                         SLAVE_RESULT,
+                         &nPointsToProcess,
+                         1,
+                         MPI_LONG,
+                         0,
+                         SLAVE_WORK,
+                         MPI_COMM_WORLD,
+                         MPI_STATUS_IGNORE);
         }
 
         printf("Escravo %d terminou!\n", myrank);
