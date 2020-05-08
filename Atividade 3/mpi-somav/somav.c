@@ -92,14 +92,9 @@ int main(int argc, char *argv[])
     double *data;
 
     /**
-    * Receive buffer
-    */
-    double *recvbuf;
-
-    /**
-     * The length of the receive buffer
+     * Number of items to process
      */
-    int lrecvbuf = 0;
+    int nItemsToProcess = 0;
 
     /**
     * Send counts
@@ -146,6 +141,8 @@ int main(int argc, char *argv[])
 
     n = atoi(argv[1]);
 
+    nItemsToProcess = BLOCK_SIZE(myrank, npes, n);
+
     if (myrank == 0)
     {
         // allocate memory
@@ -171,32 +168,54 @@ int main(int argc, char *argv[])
             sendcounts[i] = BLOCK_SIZE(i, npes, n);
             displs[i] = BLOCK_LOW(i, npes, n);
         }
+
+        // Scatter the array by the processes using the distribution set by the
+        // sendcounts and displs arrays. Root uses MPI_IN_PLACE so no data
+        // is ever sent, saving one send/receive
+        // https://www.open-mpi.org/doc/v4.0/man3/MPI_Scatterv.3.php#toc8
+        MPI_Scatterv(data,
+                     sendcounts,
+                     displs,
+                     MPI_DOUBLE,
+                     MPI_IN_PLACE,
+                     nItemsToProcess,
+                     MPI_DOUBLE,
+                     0,
+                     MPI_COMM_WORLD);
+    }
+    else
+    {
+        // Allocate receive buffer
+        // Caso existam elementos com 0 items para processar:
+        // Upon successful completion with size not equal to 0, malloc() shall
+        // return a pointer to the allocated space. If size is 0, either a null
+        // pointer or a unique pointer that can be successfully passed to
+        // free() shall be returned.
+        // https://pubs.opengroup.org/onlinepubs/009695399/functions/malloc.html
+        data = malloc(sizeof(double) * nItemsToProcess);
+
+        // Receive the scattered data
+        // All arguments to the function are significant on process root,
+        // while on other processes, only arguments recvbuf, recvcount,
+        // recvtype, root, comm are significant.
+        MPI_Scatterv(data,
+                     sendcounts,
+                     displs,
+                     MPI_DOUBLE,
+                     data,
+                     nItemsToProcess,
+                     MPI_DOUBLE,
+                     0,
+                     MPI_COMM_WORLD);
     }
 
-    lrecvbuf = BLOCK_SIZE(myrank, npes, n);
-
-    // Allocate receive buffer
-    recvbuf = malloc(sizeof(double) * lrecvbuf);
-
-    // Scatter the array by the processes using the distribution set by the
-    // sendcounts and displs arrays
-    MPI_Scatterv(data,
-                 sendcounts,
-                 displs,
-                 MPI_DOUBLE,
-                 recvbuf,
-                 lrecvbuf,
-                 MPI_DOUBLE,
-                 0,
-                 MPI_COMM_WORLD);
-
     // Print debug line
-    printArrayLine(myrank, lrecvbuf, recvbuf);
+    printArrayLine(myrank, nItemsToProcess, data);
 
     // Calculate local sum
-    for (int i = 0; i < lrecvbuf; i++)
+    for (int i = 0; i < nItemsToProcess; i++)
     {
-        ti += recvbuf[i];
+        ti += data[i];
     }
 
     printf("Processo %d: soma parcial = %.2f\n", myrank, ti);
@@ -208,12 +227,11 @@ int main(int argc, char *argv[])
     {
         printf("Processo %d: ***************************** soma total = %.2f\n", myrank, total);
 
-        free(data);
         free(sendcounts);
         free(displs);
     }
 
-    free(recvbuf);
+    free(data);
 
     MPI_Finalize();
     return 0;
