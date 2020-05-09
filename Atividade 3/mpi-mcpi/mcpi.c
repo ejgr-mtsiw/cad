@@ -31,7 +31,7 @@
 #define WORKLOAD_STEP 1000000
 
 /**
- * Calculte random workload based on de #define's above
+ * Calculte random workload based on the #define's above
  */
 #define RANDOM_WORKLOAD ((MIN_WORKLOAD + rand() % (MAX_WORKLOAD - MIN_WORKLOAD + 1)) * WORKLOAD_STEP)
 
