@@ -34,6 +34,28 @@
 // Min for rand()
 #define MIN_RAND_VALUE -2
 
+/**
+ * Calculte random workload based on the #define's above
+ */
+#define RANDOM_VALUE ((double)rand() / RAND_MAX * (MAX_RAND_VALUE - MIN_RAND_VALUE) + MIN_RAND_VALUE)
+
+/**
+ * Update Ti
+ */
+double calculateDistanceToOrigin(double *x, double *y, int dataLength)
+{
+    double localTotal = 0.0;
+    for (int i = 0; i < dataLength; i++)
+    {
+        for (int j = 0; j < dataLength; j++)
+        {
+            localTotal += sqrt(x[i] * x[i] + y[j] * y[j]);
+        }
+    }
+
+    return localTotal;
+}
+
 int main(int argc, char *argv[])
 {
     /**
@@ -54,37 +76,42 @@ int main(int argc, char *argv[])
     /**
     * x array to be shared
     */
-    float *xToSend;
+    double *xToSend;
 
     /**
     * y array to be shared
     */
-    float *yToSend;
+    double *yToSend;
 
     /**
     * local x array
     */
-    float *x;
+    double *x;
 
     /**
     * local y array
     */
-    float *y;
+    double *y;
+
+    /**
+     * Temp array for faster buffer unload
+     */
+    double *tmp;
 
     /**
      * Local y receive buffer
      */
-    float *yBuffer;
+    double *yBuffer;
 
     /**
     * Send counts
     */
-    int *sendcounts;
+    int *sendcounts = NULL;
 
     /**
     * Displacements
     */
-    int *displs;
+    int *displs = NULL;
 
     /**
      * Local total
@@ -142,7 +169,7 @@ int main(int argc, char *argv[])
         if (myrank == 0)
         {
             printf("USAGE: %s ARRAY_LENGTH\n", argv[0]);
-            printf("ARRAY_LENGTH must be higher than process count");
+            printf("ARRAY_LENGTH must be higher than process count\n");
         }
 
         MPI_Finalize();
@@ -157,28 +184,10 @@ int main(int argc, char *argv[])
     // Length of the array to send to each process
     int dataLength = n / npes;
 
-    // Allocate sendcounts array
-    sendcounts = malloc(npes * sizeof(int));
-
-    for (int i = 0; i < npes; i++)
-    {
-        sendcounts[i] = dataLength;
-    }
-
-    // Allocate displacements array
-    // By allocating twice as many elements we can use the array as a sliding
-    // window in MPI_Iscatterv
-    displs = malloc(2 * npes * sizeof(int));
-
-    for (int i = 0; i < 2 * npes; i++)
-    {
-        displs[i] = (i % npes) * dataLength;
-    }
-
     // Allocate buffers
-    x = malloc(dataLength * sizeof(float));
-    y = malloc(dataLength * sizeof(float));
-    yBuffer = malloc(dataLength * sizeof(float));
+    x = malloc(dataLength * sizeof(double));
+    y = malloc(dataLength * sizeof(double));
+    yBuffer = malloc(dataLength * sizeof(double));
 
     /*
     2- O processo P0 cria os vetores x e y com uma distribuição uniforme
@@ -188,8 +197,8 @@ int main(int argc, char *argv[])
     if (myrank == 0)
     {
         // allocate memory
-        xToSend = malloc(n * sizeof(float));
-        yToSend = malloc(n * sizeof(float));
+        xToSend = malloc(n * sizeof(double));
+        yToSend = malloc(n * sizeof(double));
 
         // Initialize the random number generator with SEED
         srand(RAND_SEED);
@@ -197,8 +206,26 @@ int main(int argc, char *argv[])
         // Fill both arrays with values between MIN_RAND_VALUE and MAX_RAND_VALUE
         for (int i = 0; i < n; i++)
         {
-            xToSend[i] = (float)rand() / RAND_MAX * (MAX_RAND_VALUE - MIN_RAND_VALUE) + MIN_RAND_VALUE;
-            yToSend[i] = (float)rand() / RAND_MAX * (MAX_RAND_VALUE - MIN_RAND_VALUE) + MIN_RAND_VALUE;
+            xToSend[i] = RANDOM_VALUE;
+            yToSend[i] = RANDOM_VALUE;
+        }
+
+        // Allocate sendcounts array
+        sendcounts = malloc(npes * sizeof(int));
+
+        for (int i = 0; i < npes; i++)
+        {
+            sendcounts[i] = dataLength;
+        }
+
+        // Allocate displacements array
+        // By allocating twice as many elements we can use the array
+        // as a sliding window in MPI_Iscatterv
+        displs = malloc(2 * npes * sizeof(int));
+
+        for (int i = 0; i < 2 * npes; i++)
+        {
+            displs[i] = (i % npes) * dataLength;
         }
     }
 
@@ -210,37 +237,17 @@ int main(int argc, char *argv[])
         ti = MPI_Wtime();
     }
 
-    /*
-     3- P0 envia os subvetores xi ,yi (de dimensão n/np cada) para os
-     outros processos 1,...,np.
-    */
-
-    // Scatter the array by the processes using the distribution set by the
-    // sendcounts and displs arrays
-    MPI_Iscatterv(xToSend,
-                  sendcounts,
-                  displs,
-                  MPI_FLOAT,
-                  x,
-                  dataLength,
-                  MPI_FLOAT,
-                  0,
-                  MPI_COMM_WORLD,
-                  &xRequest);
-
-    MPI_Iscatterv(yToSend,
-                  sendcounts,
-                  displs,
-                  MPI_FLOAT,
-                  y,
-                  dataLength,
-                  MPI_FLOAT,
-                  0,
-                  MPI_COMM_WORLD,
-                  &yRequest);
-
-    MPI_Wait(&xRequest, MPI_STATUS_IGNORE);
-    MPI_Wait(&yRequest, MPI_STATUS_IGNORE);
+    // Scatter the x array by the processes using the distribution set
+    // by the sendcounts and displs arrays
+    MPI_Scatterv(xToSend,
+                 sendcounts,
+                 displs,
+                 MPI_DOUBLE,
+                 x,
+                 dataLength,
+                 MPI_DOUBLE,
+                 0,
+                 MPI_COMM_WORLD);
 
     /*
      4- Ciclo: Cada processo Pi atualiza Ti = Ti + Jxiyi , envia yi
@@ -248,44 +255,35 @@ int main(int argc, char *argv[])
     */
     for (int cycle = 0; cycle < npes; cycle++)
     {
-        // We already have our own data sent from #0 se we only need to
-        // send/recieve npes - 1 times
-        if (cycle < npes - 1)
+        // Scatter y
+        MPI_Iscatterv(yToSend,
+                      sendcounts,
+                      &displs[cycle],
+                      MPI_DOUBLE,
+                      yBuffer,
+                      dataLength,
+                      MPI_DOUBLE,
+                      0,
+                      MPI_COMM_WORLD,
+                      &yRequest);
+
+        // On the first cycle we don't have data to work so skip it
+        if (cycle > 0)
         {
-            MPI_Iscatterv(yToSend,
-                          sendcounts,
-                          &displs[cycle + 1],
-                          MPI_FLOAT,
-                          yBuffer,
-                          dataLength,
-                          MPI_FLOAT,
-                          0,
-                          MPI_COMM_WORLD,
-                          &yRequest);
+            // Update Ti
+            localTotal += calculateDistanceToOrigin(x, y, dataLength);
         }
 
-        // Update Ti
-        for (int i = 0; i < dataLength; i++)
-        {
-            for (int j = 0; j < dataLength; j++)
-            {
-                localTotal += sqrt(x[i] * x[i] + y[j] * y[j]);
-            }
-        }
+        // making sure we have the data we need to work
+        MPI_Wait(&yRequest, MPI_STATUS_IGNORE);
 
-        // We already have our own data sent from #0 se we only need to
-        // send/recieve npes - 1 times
-        if (cycle < npes - 1)
-        {
-            // making sure we have the data we need to work
-            MPI_Wait(&yRequest, MPI_STATUS_IGNORE);
-
-            for (int i = 0; i < dataLength; i++)
-            {
-                y[i] = yBuffer[i];
-            }
-        }
+        tmp = y;
+        y = yBuffer;
+        yBuffer = tmp;
     }
+
+    // Update Ti (last batch)
+    localTotal += calculateDistanceToOrigin(x, y, dataLength);
 
     /*
      5- P0 recebe os resultados parciais Jxiy dos outros processos 1,...,np.
@@ -298,11 +296,11 @@ int main(int argc, char *argv[])
     {
         tf = MPI_Wtime();
         /* Elapsed time */
-        printf("Elapsed time on task #3 ~ #6: %fs\n", tf - ti);
-
+        //printf("Elapsed time on task #3 ~ #6: %fs\n", tf - ti);
+        printf("%f\n", tf - ti);
         // Calculate average
         double jxy = globalTotal / (n * n);
-        printf("A distância média dos elementos à origem é %.2f\n", jxy);
+        //printf("A distância média dos elementos à origem é %.2f\n", jxy);
     }
 
     // Free allocated memory
@@ -310,13 +308,13 @@ int main(int argc, char *argv[])
     free(y);
     free(yBuffer);
 
-    free(displs);
-    free(sendcounts);
-
     if (myrank == 0)
     {
         free(yToSend);
         free(xToSend);
+
+        free(displs);
+        free(sendcounts);
     }
 
     // Finalize the MPI environment
