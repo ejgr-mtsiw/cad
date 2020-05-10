@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
     /**
     * Data arrays
     */
-    float *y, *x, *yToReceive;
+    double *y, *x, *yToReceive;
 
     /**
      * Current total
@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
     dataLength = n / npes;
 
     // Buffer for the y array to receive so we don't overwrite our data
-    yToReceive = malloc(dataLength * sizeof(float));
+    yToReceive = malloc(dataLength * sizeof(double));
 
     // The process that will send me the next y[]
     originTarget = getNextProcessRank(rank, npes);
@@ -168,8 +168,8 @@ int main(int argc, char *argv[])
     if (rank == 0)
     {
         // allocate memory
-        x = malloc(n * sizeof(float));
-        y = malloc(n * sizeof(float));
+        x = malloc(n * sizeof(double));
+        y = malloc(n * sizeof(double));
 
         // Initialize the random number generator with SEED
         srand(RAND_SEED);
@@ -177,8 +177,8 @@ int main(int argc, char *argv[])
         // Fill both arrays with values between MIN_RAND_VALUE and MAX_RAND_VALUE
         for (i = 0; i < n; i++)
         {
-            x[i] = (float)rand() / RAND_MAX * (MAX_RAND_VALUE - MIN_RAND_VALUE) + MIN_RAND_VALUE;
-            y[i] = (float)rand() / RAND_MAX * (MAX_RAND_VALUE - MIN_RAND_VALUE) + MIN_RAND_VALUE;
+            x[i] = (double)rand() / RAND_MAX * (MAX_RAND_VALUE - MIN_RAND_VALUE) + MIN_RAND_VALUE;
+            y[i] = (double)rand() / RAND_MAX * (MAX_RAND_VALUE - MIN_RAND_VALUE) + MIN_RAND_VALUE;
         }
     }
 
@@ -199,19 +199,19 @@ int main(int argc, char *argv[])
         // Send partial data to each process
         for (i = 1; i < npes; i++)
         {
-            MPI_Send(&x[i * dataLength], dataLength, MPI_FLOAT, i, MESSAGE_TAG_INITIAL_X, MPI_COMM_WORLD);
-            MPI_Send(&y[i * dataLength], dataLength, MPI_FLOAT, i, MESSAGE_TAG_INITIAL_Y, MPI_COMM_WORLD);
+            MPI_Send(&x[i * dataLength], dataLength, MPI_DOUBLE, i, MESSAGE_TAG_INITIAL_X, MPI_COMM_WORLD);
+            MPI_Send(&y[i * dataLength], dataLength, MPI_DOUBLE, i, MESSAGE_TAG_INITIAL_Y, MPI_COMM_WORLD);
         }
     }
     else
     {
         // All processes except 0 can use smaller arrays
-        x = malloc(dataLength * sizeof(float));
-        y = malloc(dataLength * sizeof(float));
+        x = malloc(dataLength * sizeof(double));
+        y = malloc(dataLength * sizeof(double));
 
         // Receive the x and y data for this process
-        MPI_Recv(x, dataLength, MPI_FLOAT, 0, MESSAGE_TAG_INITIAL_X, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        MPI_Recv(y, dataLength, MPI_FLOAT, 0, MESSAGE_TAG_INITIAL_Y, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Recv(x, dataLength, MPI_DOUBLE, 0, MESSAGE_TAG_INITIAL_X, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Recv(y, dataLength, MPI_DOUBLE, 0, MESSAGE_TAG_INITIAL_Y, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
 
     /*
@@ -229,8 +229,8 @@ int main(int argc, char *argv[])
             // Using Isend and Irecv we no longer need to impose a sending order
             // Do Irecv before Isend:
             // http://supercomputingblog.com/mpi/mpi-tutorial-5-asynchronous-communication/
-            MPI_Irecv(yToReceive, dataLength, MPI_FLOAT, originTarget, MESSAGE_TAG_Y_LINE, MPI_COMM_WORLD, &getRequest);
-            MPI_Isend(y, dataLength, MPI_FLOAT, destinationTarget, MESSAGE_TAG_Y_LINE, MPI_COMM_WORLD, &sendRequest);
+            MPI_Irecv(yToReceive, dataLength, MPI_DOUBLE, originTarget, MESSAGE_TAG_Y_LINE, MPI_COMM_WORLD, &getRequest);
+            MPI_Isend(y, dataLength, MPI_DOUBLE, destinationTarget, MESSAGE_TAG_Y_LINE, MPI_COMM_WORLD, &sendRequest);
         }
 
         // Update Ti
@@ -287,11 +287,12 @@ int main(int argc, char *argv[])
     {
         tf = MPI_Wtime();
         /* Elapsed time */
-        printf("Elapsed time on task #3 ~ #6: %fs\n", tf - ti);
+        //printf("Elapsed time on task #3 ~ #6: %fs\n", tf - ti);
+        printf("%f\n", tf - ti);
 
         // Calculate average
         double jxy = Ti / (n * n);
-        printf("A distância média dos elementos à origem é %.2f\n", jxy);
+        //printf("A distância média dos elementos à origem é %.2f\n", jxy);
     }
 
     // Free allocated memory
