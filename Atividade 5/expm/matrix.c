@@ -1,16 +1,76 @@
 #include "matrix.h"
 
-double maxMij(const double *m, long n)
+Matrix *createMatrix(long nRows, long nColumns)
 {
-    double max = 0.0;
+    Matrix *m;
 
-    for (long i = 0; i < n; i++)
+    m = (Matrix *)malloc(sizeof(Matrix));
+    m->nColumns = nColumns;
+    m->nRows = nRows;
+
+    m->data = (double *)malloc(sizeof(double) * nRows * nColumns);
+
+    return m;
+}
+
+Matrix *createMatrixFilledWithZeros(long nRows, long nColumns)
+{
+    Matrix *m = createMatrix(nRows, nColumns);
+
+    for (long i = 0; i < nRows * nColumns; i++)
     {
-        for (long j = 0; j < n; j++)
+        m->data[i] = 0.0;
+    }
+
+    return m;
+}
+
+void destroyMatrix(Matrix **m)
+{
+    if ((*m) == NULL)
+    {
+        return;
+    }
+
+    if ((*m)->data != NULL)
+    {
+        free((*m)->data);
+    }
+
+    free(*m);
+}
+
+Matrix *duplicateMatrix(const Matrix *a)
+{
+    Matrix *m = createMatrix(a->nRows, a->nColumns);
+    memcpy(m->data, a->data, sizeof(double) * a->nRows * a->nColumns);
+    return m;
+}
+
+int copySubMatrix(Matrix **a, const Matrix *b, long startRow, long nRows, long startColumn, long nColumns)
+{
+    for (long i = 0; i < nRows && i < b->nRows; i++)
+    {
+        for (long j = 0; j < nColumns && j < b->nColumns; j++)
         {
-            if (m[i * n + j] > max)
+            (*a)->data[i * (*a)->nColumns + j] = b->data[(i + startRow) * b->nColumns + j + startColumn];
+        }
+    }
+
+    return OK;
+}
+
+double maxMij(const Matrix *m)
+{
+    double max = m->data[0];
+
+    for (long i = 0; i < m->nRows; i++)
+    {
+        for (long j = 0; j < m->nColumns; j++)
+        {
+            if (m->data[i * m->nColumns + j] > max)
             {
-                max = m[i * n + j];
+                max = m->data[i * m->nColumns + j];
             }
         }
     }
@@ -18,44 +78,72 @@ double maxMij(const double *m, long n)
     return max;
 }
 
-int fillWithRandom(double **a, long n)
+int fillMatrixWithRandom(Matrix **a)
+{
+    return fillArrayWithRandom(&((*a)->data), (*a)->nColumns * (*a)->nRows);
+}
+
+int fillMatrixWithZeros(Matrix **a)
+{
+    return fillArrayWithZeros(&((*a)->data), (*a)->nColumns * (*a)->nRows);
+}
+
+int fillArrayWithRandom(double **a, long n)
 {
     for (long i = 0; i < n; i++)
     {
-        for (long j = 0; j < n; j++)
-        {
-            (*a)[i * n + j] = RANDOM_VALUE;
-        }
+        (*a)[i] = 1; //RANDOM_VALUE;
     }
     return OK;
 }
 
-int sumMatrix(const double *m, double **s, long n)
+int fillArrayWithZeros(double **a, long n)
 {
     for (long i = 0; i < n; i++)
     {
-        for (long j = 0; j < n; j++)
+        (*a)[i] = 0.0;
+    }
+    return OK;
+}
+
+int sumMatrix(const Matrix *m, Matrix **s)
+{
+    long nColumns = (*s)->nColumns;
+    long nRows = (*s)->nRows;
+
+    for (long i = 0; i < nRows; i++)
+    {
+        for (long j = 0; j < nColumns; j++)
         {
-            (*s)[i * n + j] += m[i * n + j];
+            (*s)->data[i * nColumns + j] += m->data[i * nColumns + j];
         }
     }
 
     return OK;
 }
 
-int setIdentityMatrix(double **s, long n)
+int setIdentityMatrix(Matrix **s)
 {
-    for (long i = 0; i < n; i++)
+    return setIdentitySubMatrix(s, 0, 0);
+}
+
+int setIdentitySubMatrix(Matrix **s, long startRow, long startColumn)
+{
+    long pos = 0;
+    long nRows = (*s)->nRows;
+    long nColumns = (*s)->nColumns;
+
+    for (long i = 0; i < nRows; i++)
     {
-        for (long j = 0; j < n; j++)
+        for (long j = 0; j < nColumns; j++)
         {
-            if (i == j)
+            if (i + startRow == j + startColumn)
             {
-                (*s)[i * n + j] = 1.0;
+                (*s)->data[i * nColumns + j] = 1.0;
             }
             else
             {
-                (*s)[i * n + j] = 0.0;
+                (*s)->data[i * nColumns + j] = 0.0;
             }
         }
     }
@@ -63,69 +151,80 @@ int setIdentityMatrix(double **s, long n)
     return OK;
 }
 
-int multiplyMatrix(const double *a, const double *b, double **multiplied, long n)
+int multiplyMatrix(const Matrix *a, const Matrix *b, Matrix **multiplied)
 {
     double val;
 
-    for (long i = 0; i < n; i++)
+    if (a->nColumns != b->nRows)
     {
-        for (long j = 0; j < n; j++)
+        return NOK;
+    }
+
+    for (long i = 0; i < a->nRows; i++)
+    {
+        for (long j = 0; j < b->nColumns; j++)
         {
             val = 0.0;
-            for (long k = 0; k < n; k++)
+            for (long k = 0; k < a->nColumns; k++)
             {
-                val += a[i * n + j] * b[i * k + j];
+                val += a->data[i * a->nColumns + k] * b->data[k * b->nColumns + j];
             }
 
-            (*multiplied)[i * n + j] = val;
+            (*multiplied)->data[i * b->nColumns + j] = val;
         }
     }
 
     return OK;
 }
 
-int divideMatrixByLong(double **a, long number, long n)
+int multiplyMatrixAndSum(const Matrix *a, const Matrix *b, Matrix **multiplied)
 {
-    for (long i = 0; i < n; i++)
+    double val;
+
+    if (a->nColumns != b->nRows)
     {
-        for (long j = 0; j < n; j++)
+        return NOK;
+    }
+
+    for (long i = 0; i < a->nRows; i++)
+    {
+        for (long j = 0; j < b->nColumns; j++)
         {
-            (*a)[i * n + j] = (*a)[i * n + j] / number;
+            val = 0.0;
+            for (long k = 0; k < a->nColumns; k++)
+            {
+                val += a->data[i * a->nColumns + k] * b->data[k * b->nColumns + j];
+            }
+
+            (*multiplied)->data[i * b->nColumns + j] += val;
         }
     }
 
     return OK;
 }
 
-void printMatrix(const char *name, const double *m, long n, int format)
+int divideMatrixByLong(Matrix **a, long number)
 {
-    const char *formatString;
+    long nRows = (*a)->nRows;
+    long nColumns = (*a)->nColumns;
 
-    if (format == USE_LONG_FORMAT)
+    for (long i = 0; i < nRows; i++)
     {
-        formatString = LONG_FORMAT;
-    }
-    else
-    {
-        formatString = SHORT_FORMAT;
-    }
-
-    if (name != NULL)
-    {
-        printf("\n%s\n", name);
-    }
-
-    for (long i = 0; i < n; i++)
-    {
-        for (long j = 0; j < n; j++)
+        for (long j = 0; j < nColumns; j++)
         {
-            printf(formatString, m[i * n + j]);
+            (*a)->data[i * nColumns + j] = (*a)->data[i * nColumns + j] / number;
         }
-        printf("\n");
     }
+
+    return OK;
 }
 
-int printMatrixToFile(const char *filename, const char *name, const double *m, long n, int format, int append)
+void printMatrix(const char *name, const Matrix *m, int format)
+{
+    writeMatrix(stdout, name, m, format);
+}
+
+int printMatrixToFile(const char *filename, const char *name, const Matrix *m, int format, int append)
 {
     const char *formatString;
     FILE *outputFile;
@@ -145,9 +244,21 @@ int printMatrixToFile(const char *filename, const char *name, const double *m, l
         return NOK;
     }
 
-    if (n > 20)
+    writeMatrix(outputFile, name, m, format);
+
+    fclose(outputFile);
+
+    return OK;
+}
+
+void writeMatrix(FILE *fp, const char *name, const Matrix *m, int format)
+{
+    const char *formatString;
+
+    long n = m->nColumns;
+    if (n > MAX_COLUMNS_TO_OUTPUT)
     {
-        n = 20;
+        n = MAX_COLUMNS_TO_OUTPUT;
     }
 
     if (format == USE_LONG_FORMAT)
@@ -161,19 +272,19 @@ int printMatrixToFile(const char *filename, const char *name, const double *m, l
 
     if (name != NULL)
     {
-        fprintf(outputFile, "\n%s\n", name);
+        fprintf(fp, "\n%s\n", name);
     }
 
-    for (long i = 0; i < n; i++)
+    for (long i = 0; i < m->nRows && i < n; i++)
     {
-        for (long j = 0; j < n; j++)
+        for (long j = 0; j < m->nColumns && j < n; j++)
         {
-            fprintf(outputFile, formatString, m[i * n + j]);
+            fprintf(fp, formatString, m->data[i * m->nColumns + j]);
         }
-        fprintf(outputFile, "\n");
+        if (m->nColumns > n)
+        {
+            fprintf(fp, " ...");
+        }
+        fprintf(fp, "\n");
     }
-
-    fclose(outputFile);
-
-    return OK;
 }

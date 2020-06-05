@@ -1,52 +1,49 @@
 #include "single_process.h"
 
-int singleProcess(ParsedParams *params, double *a, double **s)
+int singleProcess(const ParsedParams *params, const Matrix *a, Matrix **s)
 {
     /**
      * M_k matrix
      */
-    double *m;
+    Matrix *m;
 
     /**
      * Matrix to hold multiplied values and avoid having to allocate
      * and free memory every time we multiply the matrices
      */
-    double *multiplied;
+    Matrix *multiplied = createMatrix(params->n, params->n);
 
     double *tmp;
 
-    m = (double *)malloc(sizeof(double) * params->n * params->n);
-    multiplied = (double *)malloc(sizeof(double) * params->n * params->n);
-
-    if ((*s) == NULL || a == NULL || m == NULL || multiplied == NULL)
-    {
-        printf("Out of memory!\n");
-        return NOK;
-    }
-
     // M1 = A
-    memcpy(m, a, sizeof(double) * params->n * params->n);
+    //memcpy(m->data, a->data, sizeof(double) * params->n * params->n);
+    m = duplicateMatrix(a);
 
     // S1 = I + M1
-    setIdentityMatrix(s, params->n);
-    sumMatrix(m, s, params->n);
+    setIdentityMatrix(s);
+    sumMatrix(m, s);
 
     long k = 2;
     do
     {
         // M_k = A * M_k-1 / k
-        multiplyMatrix(a, m, &multiplied, params->n);
-        memcpy(m, multiplied, sizeof(double) * params->n * params->n);
-        divideMatrixByLong(&m, k, params->n);
+        multiplyMatrix(a, m, &multiplied);
+
+        //memcpy(m->data, multiplied->data, sizeof(double) * m->nColumns * m->nRows);
+        tmp = multiplied->data;
+        multiplied->data = m->data;
+        m->data = tmp;
+
+        divideMatrixByLong(&m, k);
 
         // S_k = S_k-1 + M_k
-        sumMatrix(m, s, params->n);
+        sumMatrix(m, s);
 
         k++;
-    } while (maxMij(m, params->n) > params->tolerance);
+    } while (maxMij(m) > params->tolerance);
 
-    free(m);
-    free(multiplied);
+    destroyMatrix(&m);
+    destroyMatrix(&multiplied);
 
     return OK;
 }
