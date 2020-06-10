@@ -2,7 +2,7 @@
 #define __UTIL_H__
 
 // default tolerance
-#define DEFAULT_TOLERANCE 0.00001f
+#define DEFAULT_TOLERANCE 1e-5
 
 // Max for rand()
 #define MAX_RAND_VALUE 1
@@ -14,6 +14,7 @@
  * Calculate random workload based on the #define's above
  */
 #define RANDOM_VALUE ((double)rand() / RAND_MAX * (MAX_RAND_VALUE - MIN_RAND_VALUE) + MIN_RAND_VALUE)
+//#define RANDOM_VALUE 1.0
 
 // Tag to use on our messages
 #define MESSAGE_TAG_M_LINE 1

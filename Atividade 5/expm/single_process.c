@@ -13,10 +13,12 @@ int singleProcess(const ParsedParams *params, const Matrix *a, Matrix **s)
      */
     Matrix *multiplied = createMatrix(params->n, params->n);
 
+    /**
+     * Temporary pointer for data switch
+     */
     double *tmp;
 
     // M1 = A
-    //memcpy(m->data, a->data, sizeof(double) * params->n * params->n);
     m = duplicateMatrix(a);
 
     // S1 = I + M1
@@ -29,7 +31,6 @@ int singleProcess(const ParsedParams *params, const Matrix *a, Matrix **s)
         // M_k = A * M_k-1 / k
         multiplyMatrix(a, m, &multiplied);
 
-        //memcpy(m->data, multiplied->data, sizeof(double) * m->nColumns * m->nRows);
         tmp = multiplied->data;
         multiplied->data = m->data;
         m->data = tmp;

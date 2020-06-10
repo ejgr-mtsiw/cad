@@ -47,13 +47,13 @@ Matrix *duplicateMatrix(const Matrix *a)
     return m;
 }
 
-int copySubMatrix(Matrix **a, const Matrix *b, long startRow, long nRows, long startColumn, long nColumns)
+int copySubMatrix(Matrix **a, const Matrix *b, long startARow, long startAColumn, long startBRow, long startBColumn, long nRows, long nColumns)
 {
-    for (long i = 0; i < nRows && i < b->nRows; i++)
+    for (long i = 0; i < nRows && i + startBRow < b->nRows && i + startARow < (*a)->nRows; i++)
     {
-        for (long j = 0; j < nColumns && j < b->nColumns; j++)
+        for (long j = 0; j < nColumns && j + startBColumn < b->nColumns && j + startAColumn < (*a)->nColumns; j++)
         {
-            (*a)->data[i * (*a)->nColumns + j] = b->data[(i + startRow) * b->nColumns + j + startColumn];
+            (*a)->data[(i + startARow) * (*a)->nColumns + (j + startAColumn)] = b->data[(i + startBRow) * b->nColumns + (j + startBColumn)];
         }
     }
 
@@ -62,15 +62,17 @@ int copySubMatrix(Matrix **a, const Matrix *b, long startRow, long nRows, long s
 
 double maxMij(const Matrix *m)
 {
-    double max = m->data[0];
+    double max = fabs(m->data[0]);
+    double v = 0.0;
 
     for (long i = 0; i < m->nRows; i++)
     {
         for (long j = 0; j < m->nColumns; j++)
         {
-            if (m->data[i * m->nColumns + j] > max)
+            v = fabs(m->data[i * m->nColumns + j]);
+            if (v > max)
             {
-                max = m->data[i * m->nColumns + j];
+                max = v;
             }
         }
     }
@@ -92,7 +94,7 @@ int fillArrayWithRandom(double **a, long n)
 {
     for (long i = 0; i < n; i++)
     {
-        (*a)[i] = 1; //RANDOM_VALUE;
+        (*a)[i] = RANDOM_VALUE;
     }
     return OK;
 }
@@ -255,12 +257,6 @@ void writeMatrix(FILE *fp, const char *name, const Matrix *m, int format)
 {
     const char *formatString;
 
-    long n = m->nColumns;
-    if (n > MAX_COLUMNS_TO_OUTPUT)
-    {
-        n = MAX_COLUMNS_TO_OUTPUT;
-    }
-
     if (format == USE_LONG_FORMAT)
     {
         formatString = LONG_FORMAT;
@@ -275,13 +271,14 @@ void writeMatrix(FILE *fp, const char *name, const Matrix *m, int format)
         fprintf(fp, "\n%s\n", name);
     }
 
-    for (long i = 0; i < m->nRows && i < n; i++)
+    for (long i = 0; i < m->nRows && i < MAX_COLUMNS_TO_OUTPUT; i++)
     {
-        for (long j = 0; j < m->nColumns && j < n; j++)
+        for (long j = 0; j < m->nColumns && j < MAX_COLUMNS_TO_OUTPUT; j++)
         {
             fprintf(fp, formatString, m->data[i * m->nColumns + j]);
         }
-        if (m->nColumns > n)
+
+        if (m->nColumns > MAX_COLUMNS_TO_OUTPUT)
         {
             fprintf(fp, " ...");
         }

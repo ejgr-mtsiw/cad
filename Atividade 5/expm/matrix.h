@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 #include "util.h"
 
@@ -22,7 +23,7 @@ void destroyMatrix(Matrix **m);
 
 Matrix *duplicateMatrix(const Matrix *a);
 
-int copySubMatrix(Matrix **a, const Matrix *b, long startRow, long nRows, long startColumn, long nColumns);
+int copySubMatrix(Matrix **a, const Matrix *b, long startARow, long startAColumn, long startBRow, long startBColumn, long nRows, long nColumns);
 
 double maxMij(const Matrix *m);
 
