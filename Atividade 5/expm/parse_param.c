@@ -2,7 +2,8 @@
 
 void printUsageMessage(const char *programName)
 {
-    printf("USAGE: %s -s seed -n dimension -o output-filename [-t tolerance]\n", programName);
+    printf("USAGE: %s -s seed -n dimension -o output-filename [-t tolerance]\n",
+           programName);
 }
 
 void printErrorAndExit(int rank, const char *programName, const char *message)
@@ -44,7 +45,9 @@ ParsedParams getParams(int rank, int argc, char *argv[])
 
             if (seed <= 0)
             {
-                printErrorAndExit(rank, argv[0], "Invalid seed value. Seed must be greater than 0");
+                printErrorAndExit(rank,
+                                  argv[0],
+                                  "Invalid seed value. Seed must be greater than 0");
             }
 
             params.seed = seed;
@@ -53,7 +56,9 @@ ParsedParams getParams(int rank, int argc, char *argv[])
             n = atol(optarg);
             if (n <= 0)
             {
-                printErrorAndExit(rank, argv[0], "Invalid n value. N is the dimension of the matrix. Must be > 0.");
+                printErrorAndExit(rank,
+                                  argv[0],
+                                  "Invalid n value. N is the dimension of the matrix. Must be > 0.");
             }
 
             params.n = n;
@@ -72,7 +77,7 @@ ParsedParams getParams(int rank, int argc, char *argv[])
             tolerance = atof(optarg);
             if (tolerance <= 0)
             {
-                tolerance = 0.00001;
+                tolerance = DEFAULT_TOLERANCE;
             }
 
             params.tolerance = tolerance;

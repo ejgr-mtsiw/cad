@@ -70,7 +70,11 @@ int main(int argc, char *argv[])
         fillMatrixWithRandom(&a);
 
         //save A matrix to file
-        printMatrixToFile(params.outputfile, "A", a, USE_SHORT_FORMAT, OVERWRITE_FILE);
+        printMatrixToFile(params.outputfile,
+                          "A",
+                          a,
+                          USE_SHORT_FORMAT,
+                          OVERWRITE_FILE);
     }
 
     // Sync everyone
@@ -88,7 +92,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        res = multiProcess(&params, myrank, npes, a, &s);
+        res = multiProcess(&params, a, &s, myrank, npes);
     }
 
     if (res == OK)
@@ -101,7 +105,11 @@ int main(int argc, char *argv[])
             /* Elapsed time */
             printf("Elapsed time: %fs\n", tf - ti);
 
-            printMatrixToFile(params.outputfile, "S", s, USE_LONG_FORMAT, APPEND_FILE);
+            printMatrixToFile(params.outputfile,
+                              "S",
+                              s,
+                              USE_LONG_FORMAT,
+                              APPEND_FILE);
         }
     }
     else

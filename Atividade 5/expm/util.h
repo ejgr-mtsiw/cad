@@ -14,7 +14,6 @@
  * Calculate random workload based on the #define's above
  */
 #define RANDOM_VALUE ((double)rand() / RAND_MAX * (MAX_RAND_VALUE - MIN_RAND_VALUE) + MIN_RAND_VALUE)
-//#define RANDOM_VALUE 1.0
 
 // Tag to use on our messages
 #define MESSAGE_TAG_M_LINE 1
@@ -36,6 +35,6 @@
 #define NOK 0
 #define OK 1
 
-#define MAX_COLUMNS_TO_OUTPUT 10
+#define MAX_COLUMNS_TO_OUTPUT 20
 
 #endif

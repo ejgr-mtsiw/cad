@@ -7,7 +7,11 @@
 #include "matrix.h"
 #include "parse_param.h"
 
-int multiProcess(ParsedParams *params, int myrank, int npes, const Matrix *globalA, Matrix **globalS);
+int multiProcess(ParsedParams *params,
+                 const Matrix *globalA,
+                 Matrix **globalS,
+                 int myrank,
+                 int npes);
 
 /**
  * Calculates the number of columns to use.
@@ -20,13 +24,13 @@ long calculateColumnsPerProcess(long n, int npes);
  * If necessary (n!=nColumnsPerProcess) the values are adjusted for the
  * new internal dimensions
  */
-int shareA(const Matrix *globalA, Matrix **a, int myrank, int npes, long n, long nColumnsPerProcess, long dataLength);
+int shareA(const Matrix *globalA, Matrix **a, int myrank, int npes);
 
 /**
  * Builds the final S Matrix using the s data from each subprocess
  * If necessary (n!=nColumnsPerProcess) the values are adjusted to the
  * original dimensions
  */
-int buildFinalSMatrix(Matrix **globalS, Matrix *s, long n, int myrank, int npes);
+int buildFinalSMatrix(Matrix **globalS, Matrix *s, int myrank, int npes);
 
 #endif
