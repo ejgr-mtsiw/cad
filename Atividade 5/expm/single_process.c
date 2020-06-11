@@ -13,6 +13,11 @@ int singleProcess(const ParsedParams *params, const Matrix *a, Matrix **s)
      */
     Matrix *multiplied = createMatrix(params->n, params->n);
 
+    long d = params->n * params->n;
+
+    double *zeroes = (double *)malloc(sizeof(double) * d);
+    fillArrayWithZeros(&zeroes, d);
+
     /**
      * Temporary pointer for data switch
      */
@@ -29,7 +34,20 @@ int singleProcess(const ParsedParams *params, const Matrix *a, Matrix **s)
     do
     {
         // M_k = A * M_k-1 / k
-        multiplyMatrix(a, m, &multiplied);
+        memcpy(multiplied->data, zeroes, sizeof(double) * d);
+
+        multiplyMatrixAndSumBlock(a,
+                                  m,
+                                  &multiplied,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  a->nRows,
+                                  m->nRows,
+                                  m->nColumns);
 
         tmp = multiplied->data;
         multiplied->data = m->data;

@@ -55,12 +55,10 @@ int multiProcess(
      */
     Matrix *multiplied = createMatrix(nRowsPerProcess, nColumnsPerProcess);
 
-    /**
-     * Matrix used to multiply A, because we need to have a matrix with the
-     * right rows for the multiplication with m
-     * TODO: Make a better multiplication function that takes p as parameter?
-     */
-    Matrix *subMatrixA = createMatrix(nRowsPerProcess, nRowsPerProcess);
+    long d = multiplied->nRows * multiplied->nColumns;
+    double *zeroes = (double *)malloc(sizeof(double) * d);
+
+    fillArrayWithZeros(&zeroes, d);
 
     /**
      * M_k submatrix
@@ -78,7 +76,7 @@ int multiProcess(
     do
     {
         // Reset multiplication matrix
-        fillMatrixWithZeros(&multiplied);
+        memcpy(multiplied->data, zeroes, sizeof(double) * d);
 
         for (int p = 0; p < npes; p++)
         {
@@ -102,17 +100,18 @@ int multiProcess(
                           &mSendRequest);
             }
 
-            // TODO: Make a better multiplication function that takes p as parameter?
-            copySubMatrix(&subMatrixA,
-                          a,
-                          0,
-                          0,
-                          0,
-                          ((myrank + p) % npes) * nRowsPerProcess,
-                          nRowsPerProcess,
-                          nRowsPerProcess);
-
-            multiplyMatrixAndSum(subMatrixA, m, &multiplied);
+            multiplyMatrixAndSumBlock(a,
+                                      m,
+                                      &multiplied,
+                                      0,
+                                      ((myrank + p) % npes) * nRowsPerProcess,
+                                      0,
+                                      0,
+                                      0,
+                                      0,
+                                      a->nRows,
+                                      m->nRows,
+                                      m->nColumns);
 
             if (p < npes - 1)
             {
@@ -180,7 +179,6 @@ int multiProcess(
 
     destroyMatrix(&a);
     destroyMatrix(&s);
-    destroyMatrix(&subMatrixA);
     destroyMatrix(&m);
     destroyMatrix(&multiplied);
     free(recvBuffer);

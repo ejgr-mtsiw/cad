@@ -23,7 +23,14 @@ void destroyMatrix(Matrix **m);
 
 Matrix *duplicateMatrix(const Matrix *a);
 
-int copySubMatrix(Matrix **a, const Matrix *b, long startARow, long startAColumn, long startBRow, long startBColumn, long nRows, long nColumns);
+int copySubMatrix(Matrix **a,
+                  const Matrix *b,
+                  long startARow,
+                  long startAColumn,
+                  long startBRow,
+                  long startBColumn,
+                  long nRows,
+                  long nColumns);
 
 double maxMij(const Matrix *m);
 
@@ -65,6 +72,19 @@ int multiplyMatrix(const Matrix *a, const Matrix *b, Matrix **multiplied);
  * Multiplies two matrices and adds the result to the multiplied matrix
  */
 int multiplyMatrixAndSum(const Matrix *a, const Matrix *b, Matrix **multiplied);
+
+int multiplyMatrixAndSumBlock(const Matrix *a,
+                              const Matrix *b,
+                              Matrix **multiplied,
+                              int arow,
+                              int acol,
+                              int brow,
+                              int bcol,
+                              int crow,
+                              int ccol,
+                              int l,
+                              int m,
+                              int n);
 
 int divideMatrixByLong(Matrix **a, long number);
 

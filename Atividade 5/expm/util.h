@@ -4,6 +4,14 @@
 // default tolerance
 #define DEFAULT_TOLERANCE 1e-5
 
+// Cache threshold
+//#define CACHE_THRESHOLD 49152 // 48KB L1 cache per processor
+//#define CACHE_THRESHOLD 6142 // 48KB / 8 = 6KB
+//#define CACHE_THRESHOLD 262144 // 256KB L2 cache per processor   
+#define CACHE_THRESHOLD 32768 // 256KB / 8 = 32KB
+//#define CACHE_THRESHOLD 1048576 // 1MB L3 cache per processor   
+//#define CACHE_THRESHOLD 131072 // 1MB / 8 = 128KB
+
 // Max for rand()
 #define MAX_RAND_VALUE 1
 
@@ -35,6 +43,7 @@
 #define NOK 0
 #define OK 1
 
+#define MAX_ROWS_TO_OUTPUT 20
 #define MAX_COLUMNS_TO_OUTPUT 20
 
 #endif

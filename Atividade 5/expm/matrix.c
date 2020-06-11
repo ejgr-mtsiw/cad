@@ -205,6 +205,84 @@ int multiplyMatrixAndSum(const Matrix *a, const Matrix *b, Matrix **multiplied)
     return OK;
 }
 
+int multiplyMatrixAndSumBlock(const Matrix *a,
+                              const Matrix *b,
+                              Matrix **multiplied,
+                              int arow,
+                              int acol,
+                              int brow,
+                              int bcol,
+                              int crow,
+                              int ccol,
+                              int l,
+                              int m,
+                              int n)
+{
+    double *aptr, *bptr, *cptr;
+
+    int lhalf[3], mhalf[3], nhalf[3]; // Quadrant sizes
+    int i, j, k;
+
+    if (m * n > CACHE_THRESHOLD)
+    {
+        /* B doesn't fit in cache --- multiply blocks of A, B*/
+
+        lhalf[0] = 0;
+        lhalf[1] = l / 2;
+        lhalf[2] = l - l / 2;
+
+        mhalf[0] = 0;
+        mhalf[1] = m / 2;
+        mhalf[2] = m - m / 2;
+
+        nhalf[0] = 0;
+        nhalf[1] = n / 2;
+        nhalf[2] = n - n / 2;
+
+        for (i = 0; i < 2; i++)
+        {
+            for (j = 0; j < 2; j++)
+            {
+                for (k = 0; k < 2; k++)
+                {
+                    multiplyMatrixAndSumBlock(a,
+                                              b,
+                                              multiplied,
+                                              arow + lhalf[i],
+                                              acol + mhalf[k],
+                                              brow + mhalf[k],
+                                              bcol + nhalf[j],
+                                              crow + lhalf[i],
+                                              ccol + nhalf[j],
+                                              lhalf[i + 1],
+                                              mhalf[k + 1],
+                                              nhalf[j + 1]);
+                }
+            }
+        }
+    }
+    else
+    {
+        for (long i = 0; i < l; i++)
+        {
+            for (long j = 0; j < n; j++)
+            {
+                aptr = &a->data[(arow + i) * a->nColumns + acol];
+                bptr = &b->data[brow * b->nColumns + (bcol + j)];
+                cptr = &(*multiplied)->data[(crow + i) * (*multiplied)->nColumns + (ccol + j)];
+
+                for (long k = 0; k < m; k++)
+                {
+                    *cptr += *(aptr++) * *bptr;
+                    bptr += b->nColumns;
+                }
+            }
+        }
+    }
+
+    return OK;
+}
+
 int divideMatrixByLong(Matrix **a, long number)
 {
     long nRows = (*a)->nRows;
@@ -268,10 +346,10 @@ void writeMatrix(FILE *fp, const char *name, const Matrix *m, int format)
 
     if (name != NULL)
     {
-        fprintf(fp, "\n%s\n", name);
+        fprintf(fp, "\n%s=[\n", name);
     }
 
-    for (long i = 0; i < m->nRows && i < MAX_COLUMNS_TO_OUTPUT; i++)
+    for (long i = 0; i < m->nRows && i < MAX_ROWS_TO_OUTPUT; i++)
     {
         for (long j = 0; j < m->nColumns && j < MAX_COLUMNS_TO_OUTPUT; j++)
         {
@@ -284,4 +362,10 @@ void writeMatrix(FILE *fp, const char *name, const Matrix *m, int format)
         }
         fprintf(fp, "\n");
     }
+
+    if (m->nRows > MAX_ROWS_TO_OUTPUT)
+    {
+        fprintf(fp, " ...\n");
+    }
+    fprintf(fp, "];\n");
 }
