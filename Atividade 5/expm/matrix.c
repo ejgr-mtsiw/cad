@@ -16,11 +16,7 @@ Matrix *createMatrix(long nRows, long nColumns)
 Matrix *createMatrixFilledWithZeros(long nRows, long nColumns)
 {
     Matrix *m = createMatrix(nRows, nColumns);
-
-    for (long i = 0; i < nRows * nColumns; i++)
-    {
-        m->data[i] = 0.0;
-    }
+    fillMatrixWithZeros(&m);
 
     return m;
 }
@@ -65,15 +61,12 @@ double maxMij(const Matrix *m)
     double max = fabs(m->data[0]);
     double v = 0.0;
 
-    for (long i = 0; i < m->nRows; i++)
+    for (long i = 1; i < m->nRows * m->nColumns; i++)
     {
-        for (long j = 0; j < m->nColumns; j++)
+        v = fabs(m->data[i]);
+        if (v > max)
         {
-            v = fabs(m->data[i * m->nColumns + j]);
-            if (v > max)
-            {
-                max = v;
-            }
+            max = v;
         }
     }
 
@@ -110,15 +103,9 @@ int fillArrayWithZeros(double **a, long n)
 
 int sumMatrix(const Matrix *m, Matrix **s)
 {
-    long nColumns = (*s)->nColumns;
-    long nRows = (*s)->nRows;
-
-    for (long i = 0; i < nRows; i++)
+    for (long i = 0; i < (*s)->nRows * (*s)->nColumns; i++)
     {
-        for (long j = 0; j < nColumns; j++)
-        {
-            (*s)->data[i * nColumns + j] += m->data[i * nColumns + j];
-        }
+        (*s)->data[i] += m->data[i];
     }
 
     return OK;
@@ -285,15 +272,9 @@ int multiplyMatrixAndSumBlock(const Matrix *a,
 
 int divideMatrixByLong(Matrix **a, long number)
 {
-    long nRows = (*a)->nRows;
-    long nColumns = (*a)->nColumns;
-
-    for (long i = 0; i < nRows; i++)
+    for (long i = 0; i < (*a)->nRows * (*a)->nColumns; i++)
     {
-        for (long j = 0; j < nColumns; j++)
-        {
-            (*a)->data[i * nColumns + j] = (*a)->data[i * nColumns + j] / number;
-        }
+        (*a)->data[i] /= number;
     }
 
     return OK;

@@ -17,7 +17,7 @@ void printErrorAndExit(int rank, const char *programName, const char *message)
     }
 
     MPI_Finalize();
-    exit(EXIT_FAILURE);
+    exit(EXIT_SUCCESS);
 }
 
 ParsedParams getParams(int rank, int argc, char *argv[])

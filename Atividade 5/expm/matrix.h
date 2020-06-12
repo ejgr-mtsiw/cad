@@ -73,6 +73,9 @@ int multiplyMatrix(const Matrix *a, const Matrix *b, Matrix **multiplied);
  */
 int multiplyMatrixAndSum(const Matrix *a, const Matrix *b, Matrix **multiplied);
 
+/**
+ * Multiplies two matrices using the method presented in PPC (p.276)
+ */
 int multiplyMatrixAndSumBlock(const Matrix *a,
                               const Matrix *b,
                               Matrix **multiplied,

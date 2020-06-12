@@ -33,9 +33,10 @@ int singleProcess(const ParsedParams *params, const Matrix *a, Matrix **s)
     long k = 2;
     do
     {
-        // M_k = A * M_k-1 / k
+        // reset multiplied
         memcpy(multiplied->data, zeroes, sizeof(double) * d);
 
+        // M_k = A * M_k-1 / k
         multiplyMatrixAndSumBlock(a,
                                   m,
                                   &multiplied,
