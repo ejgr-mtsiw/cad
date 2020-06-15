@@ -4,7 +4,7 @@
 // default tolerance
 #define DEFAULT_TOLERANCE 1e-5
 
-// Cache threshold
+// Cache threshold (number of values(doubles) not bytes!)
 // Global:
 // #define CACHE_THRESHOLD 786432   // 768KB L1 cache
 // #define CACHE_THRESHOLD 4194304  // 4MB L2 cache
@@ -23,8 +23,8 @@
 // #define CACHE_THRESHOLD 98304   // 96KB L1 cache per processor
 // #define CACHE_THRESHOLD 12288   // 96KB / 8 = 12K doubles
 // #define CACHE_THRESHOLD 524288  // 512KB L2 cache per processor
-// #define CACHE_THRESHOLD 65536   // 512KB / 8 = 64K doubles
-#define CACHE_THRESHOLD 2097152 // 2MB L3 cache per processor
+#define CACHE_THRESHOLD 65536 // 512KB / 8 = 64K doubles
+// #define CACHE_THRESHOLD 2097152 // 2MB L3 cache per processor
 // #define CACHE_THRESHOLD 262144  // 2MB / 8 = 256K doubles
 
 // Max for rand()
