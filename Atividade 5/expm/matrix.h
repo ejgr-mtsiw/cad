@@ -19,11 +19,11 @@ Matrix *createMatrix(long nRows, long nColumns);
 
 Matrix *createMatrixFilledWithZeros(long nRows, long nColumns);
 
-void destroyMatrix(Matrix **m);
+void destroyMatrix(Matrix *m);
 
 Matrix *duplicateMatrix(const Matrix *a);
 
-int copySubMatrix(Matrix **a,
+int copySubMatrix(Matrix *a,
                   const Matrix *b,
                   long startARow,
                   long startAColumn,
@@ -34,15 +34,15 @@ int copySubMatrix(Matrix **a,
 
 double maxMij(const Matrix *m);
 
-int fillMatrixWithRandom(Matrix **a);
+int fillMatrixWithRandom(Matrix *a);
 
-int fillMatrixWithZeros(Matrix **a);
+int fillMatrixWithZeros(Matrix *a);
 
-int fillArrayWithRandom(double **a, long n);
+int fillArrayWithRandom(double *a, long n);
 
-int fillArrayWithZeros(double **a, long n);
+int fillArrayWithZeros(double *a, long n);
 
-int sumMatrix(const Matrix *m, Matrix **s);
+int sumMatrix(const Matrix *m, Matrix *s);
 
 /**
  * Fills the matrix with the Identity Matrix starting in
@@ -59,26 +59,26 @@ int sumMatrix(const Matrix *m, Matrix **s);
  * startRow = 2, startColumn = 0
  * s = [0 0 1 0]
  */
-int setIdentitySubMatrix(Matrix **s, long startRow, long startColumn);
+int setIdentitySubMatrix(Matrix *s, long startRow, long startColumn);
 
-int setIdentityMatrix(Matrix **s);
+int setIdentityMatrix(Matrix *s);
 
 /**
  * Multiplies two matrices and replaces the values on the multiplied matrix.
  */
-int multiplyMatrix(const Matrix *a, const Matrix *b, Matrix **multiplied);
+int multiplyMatrix(const Matrix *a, const Matrix *b, Matrix *multiplied);
 
 /**
  * Multiplies two matrices and adds the result to the multiplied matrix
  */
-int multiplyMatrixAndSum(const Matrix *a, const Matrix *b, Matrix **multiplied);
+int multiplyMatrixAndSum(const Matrix *a, const Matrix *b, Matrix *multiplied);
 
 /**
  * Multiplies two matrices using the method presented in PPC (p.276)
  */
 int multiplyMatrixAndSumBlock(const Matrix *a,
                               const Matrix *b,
-                              Matrix **multiplied,
+                              Matrix *multiplied,
                               int arow,
                               int acol,
                               int brow,
@@ -89,7 +89,7 @@ int multiplyMatrixAndSumBlock(const Matrix *a,
                               int m,
                               int n);
 
-int divideMatrixByLong(Matrix **a, long number);
+int divideMatrixByLong(Matrix *a, long number);
 
 void printMatrix(const char *name, const Matrix *m, int format);
 

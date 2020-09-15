@@ -3,7 +3,7 @@
 int multiProcess(
     ParsedParams *params,
     const Matrix *globalA,
-    Matrix **globalS,
+    Matrix *globalS,
     int myrank,
     int npes)
 {
@@ -44,7 +44,7 @@ int multiProcess(
     Matrix *a = createMatrixFilledWithZeros(nRowsPerProcess, nColumnsPerProcess);
     Matrix *s = createMatrixFilledWithZeros(nRowsPerProcess, nColumnsPerProcess);
 
-    shareA(globalA, &a, myrank, npes);
+    shareA(globalA, a, myrank, npes);
 
     // Buffer for receving
     recvBuffer = (double *)malloc(sizeof(double) * dataLength);
@@ -58,7 +58,7 @@ int multiProcess(
     long d = multiplied->nRows * multiplied->nColumns;
     double *zeroes = (double *)malloc(sizeof(double) * d);
 
-    fillArrayWithZeros(&zeroes, d);
+    fillArrayWithZeros(zeroes, d);
 
     /**
      * M_k submatrix
@@ -67,8 +67,8 @@ int multiProcess(
     Matrix *m = duplicateMatrix(a);
 
     // S1 = I + M1
-    setIdentitySubMatrix(&s, myrank * nRowsPerProcess, 0);
-    sumMatrix(m, &s);
+    setIdentitySubMatrix(s, myrank * nRowsPerProcess, 0);
+    sumMatrix(m, s);
 
     long k = 2;
     int gonogo = PROCESS_CONTINUE;
@@ -102,7 +102,7 @@ int multiProcess(
 
             multiplyMatrixAndSumBlock(a,
                                       m,
-                                      &multiplied,
+                                      multiplied,
                                       0,
                                       ((myrank + p) % npes) * nRowsPerProcess,
                                       0,
@@ -129,10 +129,10 @@ int multiProcess(
         m->data = multiplied->data;
         multiplied->data = tmp;
 
-        divideMatrixByLong(&m, k);
+        divideMatrixByLong(m, k);
 
         // S_k = S_k-1 + M_k
-        sumMatrix(m, &s);
+        sumMatrix(m, s);
 
         double max = maxMij(m);
 
@@ -177,10 +177,10 @@ int multiProcess(
     // Build final S matrix
     res = buildFinalSMatrix(globalS, s, myrank, npes);
 
-    destroyMatrix(&a);
-    destroyMatrix(&s);
-    destroyMatrix(&m);
-    destroyMatrix(&multiplied);
+    destroyMatrix(a);
+    destroyMatrix(s);
+    destroyMatrix(m);
+    destroyMatrix(multiplied);
     free(recvBuffer);
 
     return res;
@@ -197,7 +197,7 @@ long calculateColumnsPerProcess(long n, int npes)
     return ((n / npes) + 1) * npes;
 }
 
-int shareA(const Matrix *globalA, Matrix **a, int myrank, int npes)
+int shareA(const Matrix *globalA, Matrix *a, int myrank, int npes)
 {
 
     int *sendcounts, *displs;
@@ -205,7 +205,7 @@ int shareA(const Matrix *globalA, Matrix **a, int myrank, int npes)
     Matrix *aToSend = NULL;
     double *data = globalA->data;
 
-    long dataLength = (*a)->nRows * (*a)->nColumns;
+    long dataLength = a->nRows * a->nColumns;
 
     if (myrank == 0)
     {
@@ -220,13 +220,13 @@ int shareA(const Matrix *globalA, Matrix **a, int myrank, int npes)
         }
 
         // We need to adjust input data to our new internal size?
-        if ((*a)->nColumns != globalA->nColumns)
+        if (a->nColumns != globalA->nColumns)
         {
             aToSend = createMatrixFilledWithZeros(
-                (*a)->nColumns,
-                (*a)->nColumns);
+                a->nColumns,
+                a->nColumns);
 
-            copySubMatrix(&aToSend,
+            copySubMatrix(aToSend,
                           globalA,
                           0,
                           0,
@@ -245,7 +245,7 @@ int shareA(const Matrix *globalA, Matrix **a, int myrank, int npes)
                  sendcounts,
                  displs,
                  MPI_DOUBLE,
-                 (*a)->data,
+                 a->data,
                  dataLength,
                  MPI_DOUBLE,
                  0,
@@ -253,7 +253,7 @@ int shareA(const Matrix *globalA, Matrix **a, int myrank, int npes)
 
     if (myrank == 0)
     {
-        destroyMatrix(&aToSend);
+        destroyMatrix(aToSend);
         free(sendcounts);
         free(displs);
     }
@@ -261,7 +261,7 @@ int shareA(const Matrix *globalA, Matrix **a, int myrank, int npes)
     return OK;
 }
 
-int buildFinalSMatrix(Matrix **globalS, Matrix *s, int myrank, int npes)
+int buildFinalSMatrix(Matrix *globalS, Matrix *s, int myrank, int npes)
 {
 
     long dataLength = s->nRows * s->nColumns;
@@ -274,14 +274,14 @@ int buildFinalSMatrix(Matrix **globalS, Matrix *s, int myrank, int npes)
                       0,
                       0,
                       0,
-                      (*globalS)->nRows,
-                      (*globalS)->nColumns);
+                      globalS->nRows,
+                      globalS->nColumns);
 
         for (int p = 1; p < npes; p++)
         {
-            if (s->nColumns == (*globalS)->nColumns)
+            if (s->nColumns == globalS->nColumns)
             {
-                MPI_Recv((*globalS)->data + p * dataLength,
+                MPI_Recv(globalS->data + p * dataLength,
                          dataLength,
                          MPI_DOUBLE,
                          p,
@@ -306,8 +306,8 @@ int buildFinalSMatrix(Matrix **globalS, Matrix *s, int myrank, int npes)
                               0,
                               0,
                               0,
-                              (*globalS)->nRows,
-                              (*globalS)->nColumns);
+                              globalS->nRows,
+                              globalS->nColumns);
             }
         }
     }

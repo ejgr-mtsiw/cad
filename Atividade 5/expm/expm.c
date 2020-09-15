@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
         a = createMatrix(params.n, params.n);
         s = createMatrix(params.n, params.n);
 
-        fillMatrixWithRandom(&a);
+        fillMatrixWithRandom(a);
 
         //save A matrix to file
         printMatrixToFile(params.outputfile,
@@ -88,11 +88,11 @@ int main(int argc, char *argv[])
     if (npes == 1)
     {
         //Single thread/process
-        res = singleProcess(&params, a, &s);
+        res = singleProcess(&params, a, s);
     }
     else
     {
-        res = multiProcess(&params, a, &s, myrank, npes);
+        res = multiProcess(&params, a, s, myrank, npes);
     }
 
     if (res == OK)
@@ -120,8 +120,8 @@ int main(int argc, char *argv[])
 
     if (myrank == 0)
     {
-        destroyMatrix(&a);
-        destroyMatrix(&s);
+        destroyMatrix(a);
+        destroyMatrix(s);
     }
 
     MPI_Finalize();

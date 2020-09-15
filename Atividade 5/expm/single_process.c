@@ -1,6 +1,6 @@
 #include "single_process.h"
 
-int singleProcess(const ParsedParams *params, const Matrix *a, Matrix **s)
+int singleProcess(const ParsedParams *params, const Matrix *a, Matrix *s)
 {
     /**
      * M_k matrix
@@ -16,7 +16,7 @@ int singleProcess(const ParsedParams *params, const Matrix *a, Matrix **s)
     long d = params->n * params->n;
 
     double *zeroes = (double *)malloc(sizeof(double) * d);
-    fillArrayWithZeros(&zeroes, d);
+    fillArrayWithZeros(zeroes, d);
 
     /**
      * Temporary pointer for data switch
@@ -39,7 +39,7 @@ int singleProcess(const ParsedParams *params, const Matrix *a, Matrix **s)
         // M_k = A * M_k-1 / k
         multiplyMatrixAndSumBlock(a,
                                   m,
-                                  &multiplied,
+                                  multiplied,
                                   0,
                                   0,
                                   0,
@@ -54,7 +54,7 @@ int singleProcess(const ParsedParams *params, const Matrix *a, Matrix **s)
         multiplied->data = m->data;
         m->data = tmp;
 
-        divideMatrixByLong(&m, k);
+        divideMatrixByLong(m, k);
 
         // S_k = S_k-1 + M_k
         sumMatrix(m, s);
@@ -62,8 +62,8 @@ int singleProcess(const ParsedParams *params, const Matrix *a, Matrix **s)
         k++;
     } while (maxMij(m) > params->tolerance);
 
-    destroyMatrix(&m);
-    destroyMatrix(&multiplied);
+    destroyMatrix(m);
+    destroyMatrix(multiplied);
 
     return OK;
 }

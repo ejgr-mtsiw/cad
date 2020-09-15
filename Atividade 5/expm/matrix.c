@@ -16,24 +16,24 @@ Matrix *createMatrix(long nRows, long nColumns)
 Matrix *createMatrixFilledWithZeros(long nRows, long nColumns)
 {
     Matrix *m = createMatrix(nRows, nColumns);
-    fillMatrixWithZeros(&m);
+    fillMatrixWithZeros(m);
 
     return m;
 }
 
-void destroyMatrix(Matrix **m)
+void destroyMatrix(Matrix *m)
 {
-    if ((*m) == NULL)
+    if (m == NULL)
     {
         return;
     }
 
-    if ((*m)->data != NULL)
+    if (m->data != NULL)
     {
-        free((*m)->data);
+        free(m->data);
     }
 
-    free(*m);
+    free(m);
 }
 
 Matrix *duplicateMatrix(const Matrix *a)
@@ -43,13 +43,13 @@ Matrix *duplicateMatrix(const Matrix *a)
     return m;
 }
 
-int copySubMatrix(Matrix **a, const Matrix *b, long startARow, long startAColumn, long startBRow, long startBColumn, long nRows, long nColumns)
+int copySubMatrix(Matrix *a, const Matrix *b, long startARow, long startAColumn, long startBRow, long startBColumn, long nRows, long nColumns)
 {
-    for (long i = 0; i < nRows && i + startBRow < b->nRows && i + startARow < (*a)->nRows; i++)
+    for (long i = 0; i < nRows && i + startBRow < b->nRows && i + startARow < a->nRows; i++)
     {
-        for (long j = 0; j < nColumns && j + startBColumn < b->nColumns && j + startAColumn < (*a)->nColumns; j++)
+        for (long j = 0; j < nColumns && j + startBColumn < b->nColumns && j + startAColumn < a->nColumns; j++)
         {
-            (*a)->data[(i + startARow) * (*a)->nColumns + (j + startAColumn)] = b->data[(i + startBRow) * b->nColumns + (j + startBColumn)];
+            a->data[(i + startARow) * a->nColumns + (j + startAColumn)] = b->data[(i + startBRow) * b->nColumns + (j + startBColumn)];
         }
     }
 
@@ -73,54 +73,54 @@ double maxMij(const Matrix *m)
     return max;
 }
 
-int fillMatrixWithRandom(Matrix **a)
+int fillMatrixWithRandom(Matrix *a)
 {
-    return fillArrayWithRandom(&((*a)->data), (*a)->nColumns * (*a)->nRows);
+    return fillArrayWithRandom(a->data, a->nColumns * a->nRows);
 }
 
-int fillMatrixWithZeros(Matrix **a)
+int fillMatrixWithZeros(Matrix *a)
 {
-    return fillArrayWithZeros(&((*a)->data), (*a)->nColumns * (*a)->nRows);
+    return fillArrayWithZeros(a->data, a->nColumns * a->nRows);
 }
 
-int fillArrayWithRandom(double **a, long n)
-{
-    for (long i = 0; i < n; i++)
-    {
-        (*a)[i] = RANDOM_VALUE;
-    }
-    return OK;
-}
-
-int fillArrayWithZeros(double **a, long n)
+int fillArrayWithRandom(double *a, long n)
 {
     for (long i = 0; i < n; i++)
     {
-        (*a)[i] = 0.0;
+        a[i] = RANDOM_VALUE;
     }
     return OK;
 }
 
-int sumMatrix(const Matrix *m, Matrix **s)
+int fillArrayWithZeros(double *a, long n)
 {
-    for (long i = 0; i < (*s)->nRows * (*s)->nColumns; i++)
+    for (long i = 0; i < n; i++)
     {
-        (*s)->data[i] += m->data[i];
+        a[i] = 0.0;
+    }
+    return OK;
+}
+
+int sumMatrix(const Matrix *m, Matrix *s)
+{
+    for (long i = 0; i < s->nRows * s->nColumns; i++)
+    {
+        s->data[i] += m->data[i];
     }
 
     return OK;
 }
 
-int setIdentityMatrix(Matrix **s)
+int setIdentityMatrix(Matrix *s)
 {
     return setIdentitySubMatrix(s, 0, 0);
 }
 
-int setIdentitySubMatrix(Matrix **s, long startRow, long startColumn)
+int setIdentitySubMatrix(Matrix *s, long startRow, long startColumn)
 {
     long pos = 0;
-    long nRows = (*s)->nRows;
-    long nColumns = (*s)->nColumns;
+    long nRows = s->nRows;
+    long nColumns = s->nColumns;
 
     for (long i = 0; i < nRows; i++)
     {
@@ -128,11 +128,11 @@ int setIdentitySubMatrix(Matrix **s, long startRow, long startColumn)
         {
             if (i + startRow == j + startColumn)
             {
-                (*s)->data[i * nColumns + j] = 1.0;
+                s->data[i * nColumns + j] = 1.0;
             }
             else
             {
-                (*s)->data[i * nColumns + j] = 0.0;
+                s->data[i * nColumns + j] = 0.0;
             }
         }
     }
@@ -140,7 +140,7 @@ int setIdentitySubMatrix(Matrix **s, long startRow, long startColumn)
     return OK;
 }
 
-int multiplyMatrix(const Matrix *a, const Matrix *b, Matrix **multiplied)
+int multiplyMatrix(const Matrix *a, const Matrix *b, Matrix *multiplied)
 {
     double val;
 
@@ -159,14 +159,14 @@ int multiplyMatrix(const Matrix *a, const Matrix *b, Matrix **multiplied)
                 val += a->data[i * a->nColumns + k] * b->data[k * b->nColumns + j];
             }
 
-            (*multiplied)->data[i * b->nColumns + j] = val;
+            multiplied->data[i * b->nColumns + j] = val;
         }
     }
 
     return OK;
 }
 
-int multiplyMatrixAndSum(const Matrix *a, const Matrix *b, Matrix **multiplied)
+int multiplyMatrixAndSum(const Matrix *a, const Matrix *b, Matrix *multiplied)
 {
     double val;
 
@@ -185,7 +185,7 @@ int multiplyMatrixAndSum(const Matrix *a, const Matrix *b, Matrix **multiplied)
                 val += a->data[i * a->nColumns + k] * b->data[k * b->nColumns + j];
             }
 
-            (*multiplied)->data[i * b->nColumns + j] += val;
+            multiplied->data[i * b->nColumns + j] += val;
         }
     }
 
@@ -194,7 +194,7 @@ int multiplyMatrixAndSum(const Matrix *a, const Matrix *b, Matrix **multiplied)
 
 int multiplyMatrixAndSumBlock(const Matrix *a,
                               const Matrix *b,
-                              Matrix **multiplied,
+                              Matrix *multiplied,
                               int arow,
                               int acol,
                               int brow,
@@ -256,7 +256,7 @@ int multiplyMatrixAndSumBlock(const Matrix *a,
             {
                 aptr = &a->data[(arow + i) * a->nColumns + acol];
                 bptr = &b->data[brow * b->nColumns + (bcol + j)];
-                cptr = &(*multiplied)->data[(crow + i) * (*multiplied)->nColumns + (ccol + j)];
+                cptr = &multiplied->data[(crow + i) * multiplied->nColumns + (ccol + j)];
 
                 for (long k = 0; k < m; k++)
                 {
@@ -270,11 +270,11 @@ int multiplyMatrixAndSumBlock(const Matrix *a,
     return OK;
 }
 
-int divideMatrixByLong(Matrix **a, long number)
+int divideMatrixByLong(Matrix *a, long number)
 {
-    for (long i = 0; i < (*a)->nRows * (*a)->nColumns; i++)
+    for (long i = 0; i < a->nRows * a->nColumns; i++)
     {
-        (*a)->data[i] /= number;
+        a->data[i] /= number;
     }
 
     return OK;

@@ -7,6 +7,6 @@
 #include "matrix.h"
 #include "parse_param.h"
 
-int singleProcess(const ParsedParams *params, const Matrix *a, Matrix **s);
+int singleProcess(const ParsedParams *params, const Matrix *a, Matrix *s);
 
 #endif
